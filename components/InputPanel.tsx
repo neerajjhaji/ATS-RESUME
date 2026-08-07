@@ -65,8 +65,16 @@ export function InputPanel(props: Props) {
     }
   }
 
-  const canAnalyze = resumeText.trim().length > 20 && jobDescription.trim().length > 20 && !isBusy;
-  const canQuickScore = resumeText.trim().length > 20 && !isBusy;
+  const hasResume = resumeText.trim().length > 20;
+  const hasJd = jobDescription.trim().length > 20;
+  const canAnalyze = hasResume && hasJd && !isBusy;
+  const canQuickScore = hasResume && !isBusy;
+
+  // Human-readable reason the Analyze button is disabled, so it never looks broken.
+  const missing: string[] = [];
+  if (!hasResume) missing.push("your resume");
+  if (!hasJd) missing.push("a job description");
+  const analyzeHint = missing.length ? `Add ${missing.join(" and ")} to enable` : "";
 
   return (
     <div className="space-y-5">
@@ -173,6 +181,9 @@ export function InputPanel(props: Props) {
             </>
           )}
         </button>
+        {!canAnalyze && !isBusy && analyzeHint && (
+          <p className="text-center text-[11px] font-medium text-amber-600">{analyzeHint}</p>
+        )}
 
         <button
           onClick={onQuickScore}
