@@ -41,12 +41,89 @@ in the UI.
 
 Open <http://localhost:3000>.
 
+## Run on macOS (VS Code)
+
+Step-by-step for a fresh Mac.
+
+**1. Install prerequisites** (one-time). Easiest with [Homebrew](https://brew.sh):
+
+```bash
+brew install node git
+```
+
+Or download the Node.js 18+ installer from <https://nodejs.org>. Verify:
+
+```bash
+node -v && npm -v
+```
+
+Install VS Code from <https://code.visualstudio.com> (or `brew install --cask visual-studio-code`).
+
+**2. Clone the repo:**
+
+```bash
+git clone https://github.com/neerajjhaji/ATS-RESUME.git
+```
+
+**3. Open it in VS Code:**
+
+```bash
+code ATS-RESUME
+```
+
+> If `code` isn't found: open VS Code → `⇧⌘P` → "Shell Command: Install 'code' command in PATH".
+
+**4. Install dependencies** — open the VS Code terminal (`` ⌃` ``) and run:
+
+```bash
+npm install
+```
+
+**5. Add your Gemini API key.** Get one at <https://aistudio.google.com/apikey>, then:
+
+```bash
+cp .env.example .env.local
+```
+
+Open `.env.local` and set `GEMINI_API_KEY=your_real_key_here`.
+
+**6. ⚠️ Fix the model IDs (required).** Edit the `MODELS` table in [`lib/gemini.ts`](lib/gemini.ts)
+— the spec's IDs don't exist in the API. Use real ones your key can access, e.g.:
+
+```ts
+export const MODELS = {
+  FLASH_FAST: "gemini-2.0-flash",
+  PRO_STRATEGY: "gemini-2.5-pro",
+  FLASH_AUX: "gemini-2.5-flash",
+} as const;
+```
+
+Check availability at <https://ai.google.dev/gemini-api/docs/models>.
+
+**7. Run it:**
+
+```bash
+npm run dev
+```
+
+Open <http://localhost:3000>. Edits hot-reload automatically.
+
+**8. Production build (optional):**
+
+```bash
+npm run build && npm start
+```
+
+**Recommended VS Code extensions:** ESLint (`dbaeumer.vscode-eslint`),
+Tailwind CSS IntelliSense (`bradlc.vscode-tailwindcss`), Prettier (`esbenp.prettier-vscode`).
+
 ## How it works
 
 ```
-Upload PDF/DOCX ──► /api/parse    (Phase 1: extract + normalize)  ─► clean resume text
-Analyze         ──► /api/analyze  (Phase 2: match_score + gaps + actionable_changes)
+Upload PDF/DOCX ──► /api/parse       (Phase 1: extract + normalize) ─► clean resume text
+Analyze         ──► /api/analyze     (Phase 2: match_score + gaps + actionable_changes)
 Cover letter    ──► /api/cover-letter (Phase 3: tailored letter)
+Quick score     ──► /api/ats-score   (standalone: resume-only ATS readiness, no JD)
 ```
 
 ### Structured output
