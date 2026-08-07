@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply text-slate-900 antialiased;
+  background-color: #f8fafc;
+  background-image:
+    radial-gradient(60rem 40rem at 110% -10%, rgba(139, 92, 246, 0.1), transparent 60%),
+    radial-gradient(50rem 35rem at -10% 0%, rgba(99, 102, 241, 0.12), transparent 55%);
+  background-attachment: fixed;
+}
+
+/* Soft entrance for result panels */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-in {
+  animation: fadeInUp 0.45s ease-out both;
+}
+
+/* Thin, unobtrusive scrollbars for the split panels */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+}
+
+/* Monospace resume editor mirrors an ATS plain-text parse */
+.resume-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}

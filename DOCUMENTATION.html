@@ -1,0 +1,571 @@
+<title>Resume Tailor — Application Documentation · LogiByte Innovations</title>
+<style>
+  :root {
+    --bg: #f6f7fc;
+    --surface: #ffffff;
+    --surface-2: #f0f2fb;
+    --border: #e4e7f3;
+    --ink: #14162b;
+    --muted: #565d78;
+    --faint: #878da6;
+    --accent: #5457ef;
+    --accent-2: #8b5cf6;
+    --good: #15803d;
+    --good-bg: #e7f6ec;
+    --warn: #b45309;
+    --warn-bg: #fbf1e0;
+    --crit: #be123c;
+    --crit-bg: #fce8ec;
+    --code-bg: #12142b;
+    --code-ink: #e7e9f8;
+    --code-faint: #8a90c0;
+    --code-accent: #a5b4fc;
+    --code-str: #7ee0b8;
+    --code-key: #f0a8c0;
+    --shadow: 0 1px 2px rgba(20, 22, 43, 0.04), 0 8px 28px -12px rgba(20, 22, 43, 0.14);
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", "Consolas", "Menlo", monospace;
+    --maxw: 1180px;
+    --read: 70ch;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0a0c16;
+      --surface: #12152a;
+      --surface-2: #191d38;
+      --border: #262b4c;
+      --ink: #eef0fb;
+      --muted: #a6acca;
+      --faint: #6d7398;
+      --accent: #8f92fb;
+      --accent-2: #b09bff;
+      --good: #4ade80;
+      --good-bg: #113526;
+      --warn: #fbbf24;
+      --warn-bg: #3a2c12;
+      --crit: #fb7185;
+      --crit-bg: #3a1420;
+      --code-bg: #090a17;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 34px -14px rgba(0, 0, 0, 0.7);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f6f7fc; --surface: #ffffff; --surface-2: #f0f2fb; --border: #e4e7f3;
+    --ink: #14162b; --muted: #565d78; --faint: #878da6; --accent: #5457ef; --accent-2: #8b5cf6;
+    --good: #15803d; --good-bg: #e7f6ec; --warn: #b45309; --warn-bg: #fbf1e0;
+    --crit: #be123c; --crit-bg: #fce8ec; --code-bg: #12142b;
+    --shadow: 0 1px 2px rgba(20,22,43,0.04), 0 8px 28px -12px rgba(20,22,43,0.14);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a0c16; --surface: #12152a; --surface-2: #191d38; --border: #262b4c;
+    --ink: #eef0fb; --muted: #a6acca; --faint: #6d7398; --accent: #8f92fb; --accent-2: #b09bff;
+    --good: #4ade80; --good-bg: #113526; --warn: #fbbf24; --warn-bg: #3a2c12;
+    --crit: #fb7185; --crit-bg: #3a1420; --code-bg: #090a17;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 34px -14px rgba(0,0,0,0.7);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 88px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    font-size: 16px;
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding: 12px clamp(16px, 4vw, 40px);
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
+    backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark { width: 34px; height: 34px; flex: none; border-radius: 9px; }
+  .brand-name { font-weight: 700; letter-spacing: -0.01em; font-size: 15px; }
+  .brand-sub { font-size: 12px; color: var(--faint); margin-top: -2px; }
+  .topbar-right { display: flex; align-items: center; gap: 14px; }
+  .powered {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 12px; color: var(--muted); white-space: nowrap;
+  }
+  .powered b {
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 700;
+  }
+  .theme-btn {
+    border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+    border-radius: 8px; padding: 6px 8px; cursor: pointer; font-size: 13px; line-height: 1;
+  }
+  .theme-btn:hover { color: var(--ink); border-color: var(--accent); }
+  .theme-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- Shell ---------- */
+  .shell { max-width: var(--maxw); margin: 0 auto; padding: 0 clamp(16px, 4vw, 40px); }
+  .layout { display: grid; grid-template-columns: 1fr; gap: 44px; padding: 40px 0 24px; }
+  @media (min-width: 960px) { .layout { grid-template-columns: 220px minmax(0, 1fr); } }
+
+  /* ---------- TOC ---------- */
+  nav.toc { display: none; }
+  @media (min-width: 960px) {
+    nav.toc {
+      display: block; position: sticky; top: 88px; align-self: start;
+      max-height: calc(100vh - 110px); overflow-y: auto;
+    }
+  }
+  .toc-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); margin: 0 0 10px 10px; }
+  .toc a {
+    display: block; padding: 5px 10px; border-left: 2px solid var(--border);
+    color: var(--muted); text-decoration: none; font-size: 13.5px; transition: color .15s, border-color .15s;
+  }
+  .toc a:hover { color: var(--ink); }
+  .toc a.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+
+  main { min-width: 0; }
+  section { scroll-margin-top: 88px; }
+  section + section { margin-top: 52px; padding-top: 8px; }
+
+  /* ---------- Type ---------- */
+  h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.08; letter-spacing: -0.025em; margin: 0 0 14px; text-wrap: balance; }
+  h2 { font-size: clamp(21px, 3vw, 27px); letter-spacing: -0.02em; margin: 0 0 8px; text-wrap: balance; }
+  h3 { font-size: 16px; letter-spacing: -0.01em; margin: 26px 0 8px; }
+  p { margin: 0 0 14px; max-width: var(--read); color: var(--muted); }
+  p.lead { font-size: 18.5px; color: var(--ink); max-width: 62ch; }
+  strong { color: var(--ink); font-weight: 650; }
+  a { color: var(--accent); }
+  .eyebrow {
+    display: inline-block; font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 10px;
+  }
+  .section-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+  .section-num { font-family: var(--mono); font-size: 13px; color: var(--faint); }
+
+  code {
+    font-family: var(--mono); font-size: 0.86em;
+    background: var(--surface-2); color: var(--ink);
+    padding: 0.12em 0.42em; border-radius: 5px; border: 1px solid var(--border);
+  }
+  kbd { font-family: var(--mono); font-size: 12px; background: var(--surface-2); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; }
+
+  /* ---------- Hero ---------- */
+  .hero { padding: 8px 0 4px; }
+  .hero .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+  .badge {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px;
+  }
+  .badge b { color: var(--ink); }
+  .stat-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 26px; }
+  @media (min-width: 620px) { .stat-row { grid-template-columns: repeat(4, 1fr); } }
+  .stat {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px; box-shadow: var(--shadow);
+  }
+  .stat .n { font-size: 26px; font-weight: 750; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+    background: linear-gradient(120deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .stat .l { font-size: 12.5px; color: var(--faint); margin-top: 2px; }
+
+  /* ---------- Cards / callouts ---------- */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; box-shadow: var(--shadow); }
+  .grid-2 { display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 720px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+
+  .note { border-radius: 12px; padding: 14px 16px; border: 1px solid; margin: 18px 0; font-size: 14.5px; }
+  .note p { margin: 0; max-width: none; }
+  .note .tag { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 4px; }
+  .note.warn { background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
+  .note.warn .tag, .note.warn strong { color: var(--warn); }
+  .note.warn { color: color-mix(in srgb, var(--warn) 82%, var(--ink)); }
+  .note.info { background: color-mix(in srgb, var(--accent) 9%, var(--surface)); border-color: color-mix(in srgb, var(--accent) 34%, transparent); color: var(--muted); }
+  .note.info .tag { color: var(--accent); }
+
+  /* ---------- Pipeline diagram ---------- */
+  .pipe { display: grid; gap: 14px; grid-template-columns: 1fr; margin: 6px 0 4px; }
+  @media (min-width: 780px) { .pipe { grid-template-columns: repeat(3, 1fr); position: relative; } }
+  .phase {
+    position: relative; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px; box-shadow: var(--shadow); overflow: hidden;
+  }
+  .phase::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: linear-gradient(var(--accent), var(--accent-2)); }
+  .phase .pn { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+  .phase h4 { margin: 4px 0 6px; font-size: 15px; }
+  .phase .model { display: inline-block; font-family: var(--mono); font-size: 12px; color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+    border-radius: 6px; padding: 3px 8px; margin-bottom: 8px; }
+  .phase p { font-size: 13.5px; margin: 0; max-width: none; }
+  .arrow { display: none; }
+  @media (min-width: 780px) {
+    .arrow { display: flex; align-items: center; justify-content: center; position: absolute; top: 50%; transform: translateY(-50%); color: var(--faint); z-index: 2; }
+    .arrow.a1 { left: calc(33.33% - 7px); } .arrow.a2 { left: calc(66.66% - 7px); }
+  }
+
+  /* ---------- Tables ---------- */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; background: var(--surface); }
+  th, td { text-align: left; padding: 11px 15px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 11.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--faint); font-weight: 600; background: var(--surface-2); }
+  tr:last-child td { border-bottom: none; }
+  td code { white-space: nowrap; }
+  .method { font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 5px; color: #fff; background: var(--accent); }
+
+  /* ---------- Code blocks ---------- */
+  pre {
+    background: var(--code-bg); color: var(--code-ink); border-radius: 12px;
+    padding: 16px 18px; overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.6;
+    border: 1px solid color-mix(in srgb, var(--code-bg) 60%, #4b4f80); margin: 14px 0;
+  }
+  pre .c { color: var(--code-faint); } pre .k { color: var(--code-key); }
+  pre .s { color: var(--code-str); } pre .n { color: var(--code-accent); }
+  pre .p { color: var(--code-ink); }
+
+  .feature-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .feature-list li { display: flex; gap: 11px; align-items: flex-start; font-size: 14.5px; color: var(--muted); }
+  .feature-list .tick { flex: none; width: 20px; height: 20px; margin-top: 2px; border-radius: 6px; background: var(--good-bg); color: var(--good); display: grid; place-items: center; font-size: 12px; font-weight: 800; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; }
+
+  footer {
+    border-top: 1px solid var(--border); margin-top: 48px; padding: 28px clamp(16px, 4vw, 40px);
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+    max-width: var(--maxw); margin-left: auto; margin-right: auto;
+  }
+  footer .powered b { font-size: 13px; }
+  footer small { color: var(--faint); font-size: 12px; }
+</style>
+
+<div class="topbar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs><rect width="48" height="48" rx="12" fill="url(#g)"/><path d="M15 14v20h11" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M30 18l5 6-5 6" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/></svg>
+    <div>
+      <div class="brand-name">Resume Tailor</div>
+      <div class="brand-sub">Application Documentation</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="powered">Powered by <b>LogiByte Innovations</b></span>
+    <button class="theme-btn" id="themeBtn" aria-label="Toggle color theme">◐</button>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="layout">
+    <nav class="toc" aria-label="Table of contents">
+      <p class="toc-label">Contents</p>
+      <a href="#overview">Overview</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#pipeline">Dual-engine pipeline</a>
+      <a href="#standalone">Standalone ATS score</a>
+      <a href="#models">Model routing</a>
+      <a href="#api">API reference</a>
+      <a href="#schema">ATS audit schema</a>
+      <a href="#interface">The interface</a>
+      <a href="#setup">Setup & run</a>
+      <a href="#structure">Project structure</a>
+      <a href="#security">Security model</a>
+      <a href="#stack">Tech stack</a>
+    </nav>
+
+    <main>
+      <!-- HERO -->
+      <section id="overview" class="hero">
+        <span class="eyebrow">Product & Technical Documentation</span>
+        <h1>Resume Tailor</h1>
+        <p class="lead">A full-stack ATS optimization tool that scores a resume against any job description, pinpoints the exact gaps, and rewrites them line by line — powered by a three-model Google Gemini pipeline.</p>
+        <div class="badges">
+          <span class="badge"><b>Next.js 14</b> · App Router</span>
+          <span class="badge"><b>TypeScript</b></span>
+          <span class="badge"><b>Tailwind CSS</b></span>
+          <span class="badge"><b>@google/genai</b></span>
+        </div>
+        <div class="stat-row">
+          <div class="stat"><div class="n">3</div><div class="l">Gemini models, task-routed</div></div>
+          <div class="stat"><div class="n">4</div><div class="l">Server API routes</div></div>
+          <div class="stat"><div class="n">0–100</div><div class="l">ATS match score</div></div>
+          <div class="stat"><div class="n">2</div><div class="l">Export formats (PDF · MD)</div></div>
+        </div>
+      </section>
+
+      <!-- ARCHITECTURE -->
+      <section id="architecture">
+        <div class="section-head"><span class="section-num">01</span><h2>Architecture</h2></div>
+        <p>Resume Tailor is a single Next.js application. The browser renders an interactive split-panel dashboard; all AI work and file parsing happen server-side in Node-runtime route handlers, so the Gemini key and heavy parsing libraries never reach the client.</p>
+        <div class="grid-2">
+          <div class="card">
+            <h3 style="margin-top:0">Client (browser)</h3>
+            <p style="font-size:14px">A React client component orchestrates state: inputs, applied edits, keyword injections, and the live editor. It talks to three API routes over <code>fetch</code> and renders results into the dashboard.</p>
+          </div>
+          <div class="card">
+            <h3 style="margin-top:0">Server (Node runtime)</h3>
+            <p style="font-size:14px">Route handlers extract text with <code>pdf-parse</code>/<code>mammoth</code>, then call Gemini through the official SDK with enforced JSON schemas. Errors are caught and returned as structured messages.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- PIPELINE -->
+      <section id="pipeline">
+        <div class="section-head"><span class="section-num">02</span><h2>The dual-engine pipeline</h2></div>
+        <p>Each task is routed to the model that fits its performance profile — fast flash models for extraction and short-form generation, the pro model for deep strategic reasoning. The three phases run in sequence, with results flowing from one to the next.</p>
+        <div class="pipe">
+          <div class="phase">
+            <div class="pn">Phase 1 · Parse</div>
+            <h4>Extract & normalize</h4>
+            <span class="model">gemini-3.6-flash</span>
+            <p>Raw text is pulled from the PDF/DOCX, then normalized into clean, single-column, ATS-parsable plain text. Falls back to raw extraction if the model call fails.</p>
+          </div>
+          <div class="arrow a1" aria-hidden="true">→</div>
+          <div class="phase">
+            <div class="pn">Phase 2 · Analyze</div>
+            <h4>Deep ATS audit</h4>
+            <span class="model">gemini-3.1-pro</span>
+            <p>Scores the match, buckets matched vs. missing keywords, and emits verbatim-anchored, line-by-line rewrites — all under an enforced JSON schema.</p>
+          </div>
+          <div class="arrow a2" aria-hidden="true">→</div>
+          <div class="phase">
+            <div class="pn">Phase 3 · Generate</div>
+            <h4>Cover letter</h4>
+            <span class="model">gemini-3.5-flash</span>
+            <p>Optionally drafts a tailored cover letter that leans on matched strengths and the gap analysis from Phase 2.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- STANDALONE -->
+      <section id="standalone">
+        <div class="section-head"><span class="section-num">02b</span><h2>Standalone ATS score</h2></div>
+        <p>Separate from the job-specific pipeline, Resume Tailor can predict an ATS score from the <strong>resume alone</strong> — no job description and no target title required. It's a fast resume health check that grades general parsability and quality.</p>
+        <div class="note info">
+          <span class="tag">How it differs from the audit</span>
+          <p>The main audit scores <em>fit to a specific role</em>. The standalone score judges the resume <em>on its own</em> — formatting, quantified impact, action verbs, section completeness, keyword density, and length/contact hygiene — and returns a per-dimension breakdown plus general quick wins.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td><code>ats_score</code></td><td>Overall readiness, 0–100</td></tr>
+              <tr><td><code>verdict</code></td><td>Plain-language summary of resume health</td></tr>
+              <tr><td><code>breakdown[]</code></td><td>Per-dimension <code>{ category, score, note }</code></td></tr>
+              <tr><td><code>quick_wins[]</code></td><td>3–6 general, role-independent improvements</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- MODELS -->
+      <section id="models">
+        <div class="section-head"><span class="section-num">03</span><h2>Model routing</h2></div>
+        <p>Every call reads its model ID from one table in <code>lib/gemini.ts</code>. Change a value there and it propagates to every route.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Constant</th><th>Model</th><th>Responsibility</th></tr></thead>
+            <tbody>
+              <tr><td><code>FLASH_FAST</code></td><td><code>gemini-3.6-flash</code></td><td>Fast parsing, PDF/DOCX extraction, keyword pre-matching, UI streaming.</td></tr>
+              <tr><td><code>PRO_STRATEGY</code></td><td><code>gemini-3.1-pro</code></td><td>Deep ATS match scoring, gap detection, line-by-line rewrites.</td></tr>
+              <tr><td><code>FLASH_AUX</code></td><td><code>gemini-3.5-flash</code></td><td>Cover letters, summary rewrites, interview-prep questions.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note warn">
+          <span class="tag">⚠ Verify before deploying</span>
+          <p>The model IDs above come from the project specification. Confirm your API key has access to them at <strong>ai.google.dev/gemini-api/docs/models</strong>, and edit the <code>MODELS</code> table in <code>lib/gemini.ts</code> if your account exposes different IDs.</p>
+        </div>
+      </section>
+
+      <!-- API -->
+      <section id="api">
+        <div class="section-head"><span class="section-num">04</span><h2>API reference</h2></div>
+        <p>Three Node-runtime route handlers. All return JSON; on failure they return <code>{ "error": string }</code> with an appropriate status code.</p>
+        <div class="table-wrap" style="margin-bottom:18px">
+          <table>
+            <thead><tr><th>Endpoint</th><th>Method</th><th>Body</th><th>Returns</th></tr></thead>
+            <tbody>
+              <tr><td><code>/api/parse</code></td><td><span class="method">POST</span></td><td><code>multipart/form-data</code> · <code>file</code></td><td><code>{ text, structured, source }</code></td></tr>
+              <tr><td><code>/api/analyze</code></td><td><span class="method">POST</span></td><td><code>{ resumeText, jobDescription, jobTitle }</code></td><td>ATS audit object</td></tr>
+              <tr><td><code>/api/cover-letter</code></td><td><span class="method">POST</span></td><td><code>{ resumeText, jobDescription, jobTitle, analysis }</code></td><td><code>{ cover_letter }</code></td></tr>
+              <tr><td><code>/api/ats-score</code></td><td><span class="method">POST</span></td><td><code>{ resumeText }</code> <em>— no JD/title</em></td><td>ATS readiness object</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Example — request an ATS audit</h3>
+<pre><span class="k">const</span> res = <span class="k">await</span> fetch(<span class="s">"/api/analyze"</span>, {
+  method: <span class="s">"POST"</span>,
+  headers: { <span class="s">"Content-Type"</span>: <span class="s">"application/json"</span> },
+  body: JSON.stringify({ resumeText, jobDescription, jobTitle }),
+});
+<span class="k">const</span> audit = <span class="k">await</span> res.json(); <span class="c">// → typed AtsAudit</span></pre>
+      </section>
+
+      <!-- SCHEMA -->
+      <section id="schema">
+        <div class="section-head"><span class="section-num">05</span><h2>ATS audit schema</h2></div>
+        <p>Phase 2 is constrained by <code>config.responseSchema</code>, so the model is forced to return exactly this shape — no fragile string parsing on the client.</p>
+<pre>{
+  <span class="k">"match_score"</span>: <span class="n">72</span>,                    <span class="c">// integer 0–100</span>
+  <span class="k">"summary_critique"</span>: <span class="s">"…"</span>,             <span class="c">// alignment assessment</span>
+  <span class="k">"keywords"</span>: {
+    <span class="k">"matched"</span>: [<span class="s">"REST APIs"</span>, <span class="s">"CI/CD"</span>],
+    <span class="k">"missing_hard_skills"</span>: [<span class="s">"Go"</span>],
+    <span class="k">"missing_tools"</span>: [<span class="s">"Kubernetes"</span>, <span class="s">"Terraform"</span>],
+    <span class="k">"missing_soft_skills"</span>: [<span class="s">"Stakeholder management"</span>]
+  },
+  <span class="k">"actionable_changes"</span>: [
+    {
+      <span class="k">"section"</span>: <span class="s">"Work Experience - Acme Corp"</span>,
+      <span class="k">"current_text"</span>: <span class="s">"Managed the backend."</span>,     <span class="c">// verbatim, so it can be found</span>
+      <span class="k">"flaw_reason"</span>: <span class="s">"Lacks metrics and JD keywords."</span>,
+      <span class="k">"suggested_text"</span>: <span class="s">"Led a 4-service Go/Kubernetes backend serving 2M req/day…"</span>
+    }
+  ]
+}</pre>
+        <div class="note info">
+          <span class="tag">Why verbatim <code>current_text</code>?</span>
+          <p>The editor applies a suggestion by finding <code>current_text</code> in the live resume and swapping it for <code>suggested_text</code>. Anchoring on the exact original snippet makes “Apply Edit” a deterministic, one-click replacement.</p>
+        </div>
+      </section>
+
+      <!-- INTERFACE -->
+      <section id="interface">
+        <div class="section-head"><span class="section-num">06</span><h2>The interface</h2></div>
+        <p>A two-column workspace. The left column captures inputs and, after analysis, becomes the audit dashboard. The right column is where you act on the findings and edit in place.</p>
+        <div class="grid-2">
+          <div class="card">
+            <h3 style="margin-top:0">Left · Audit dashboard</h3>
+            <ul class="feature-list">
+              <li><span class="tick">✓</span> Resume dropzone (PDF/DOCX) with a paste-text fallback</li>
+              <li><span class="tick">✓</span> Target job title + job-description fields</li>
+              <li><span class="tick">✓</span> Circular match-score gauge with a plain-language verdict</li>
+              <li><span class="tick">✓</span> Keyword gap chips — click a missing keyword to inject it into Skills</li>
+              <li><span class="tick">✓</span> Cover-letter generator card</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3 style="margin-top:0">Right · Rewrites & live editor</h3>
+            <ul class="feature-list">
+              <li><span class="tick">✓</span> “Where &amp; What to Change” feed with before/after diffs</li>
+              <li><span class="tick">✓</span> One-click <strong>Apply Edit</strong> updates the resume instantly</li>
+              <li><span class="tick">✓</span> Editable single-column, ATS-parsable resume (no multi-column tricks)</li>
+              <li><span class="tick">✓</span> Export to ATS-clean <strong>PDF</strong> or <strong>Markdown</strong></li>
+              <li><span class="tick">✓</span> Reset to revert to the originally parsed resume</li>
+            </ul>
+          </div>
+        </div>
+        <h3>Score gauge — how to read it</h3>
+        <div class="legend">
+          <span class="chip"><span class="dot" style="background:var(--crit)"></span> 0–49 · Weak match</span>
+          <span class="chip"><span class="dot" style="background:var(--warn)"></span> 50–74 · Needs work</span>
+          <span class="chip"><span class="dot" style="background:var(--good)"></span> 75–100 · Strong match</span>
+        </div>
+      </section>
+
+      <!-- SETUP -->
+      <section id="setup">
+        <div class="section-head"><span class="section-num">07</span><h2>Setup &amp; run</h2></div>
+        <p>Requires Node 18+. Get a Gemini key at <strong>aistudio.google.com/apikey</strong>.</p>
+<pre><span class="c"># 1 · install dependencies</span>
+npm install
+
+<span class="c"># 2 · configure the key (server-only, gitignored)</span>
+cp .env.example .env.local
+<span class="c"># then edit .env.local:</span>
+GEMINI_API_KEY=your_gemini_api_key_here
+
+<span class="c"># 3 · run</span>
+npm run dev        <span class="c"># http://localhost:3000</span>
+npm run build      <span class="c"># production build</span>
+npm run typecheck  <span class="c"># tsc --noEmit</span></pre>
+      </section>
+
+      <!-- STRUCTURE -->
+      <section id="structure">
+        <div class="section-head"><span class="section-num">08</span><h2>Project structure</h2></div>
+<pre>resume-tailor/
+├─ app/
+│  ├─ api/
+│  │  ├─ parse/route.ts         <span class="c"># Phase 1 — extraction (flash)</span>
+│  │  ├─ analyze/route.ts       <span class="c"># Phase 2 — ATS audit (pro)</span>
+│  │  └─ cover-letter/route.ts  <span class="c"># Phase 3 — cover letter (flash-aux)</span>
+│  ├─ layout.tsx · globals.css
+│  └─ page.tsx                  <span class="c"># split-panel orchestrator + state</span>
+├─ components/                  <span class="c"># InputPanel, ScoreGauge, KeywordList,</span>
+│                               <span class="c"># RecommendationsFeed, ResumeEditor,</span>
+│                               <span class="c"># CoverLetterCard, ResumePdfDocument, Brand</span>
+├─ lib/                         <span class="c"># gemini (client + MODELS), schemas,</span>
+│                               <span class="c"># fileParser, export</span>
+├─ types/index.ts               <span class="c"># shared domain types</span>
+└─ .env.example</pre>
+      </section>
+
+      <!-- SECURITY -->
+      <section id="security">
+        <div class="section-head"><span class="section-num">09</span><h2>Security model</h2></div>
+        <ul class="feature-list">
+          <li><span class="tick">✓</span> The Gemini key lives only in <code>.env.local</code> (gitignored) and is read via <code>process.env.GEMINI_API_KEY</code> on the server.</li>
+          <li><span class="tick">✓</span> No <code>NEXT_PUBLIC_</code> prefix — the key is never bundled into client JavaScript.</li>
+          <li><span class="tick">✓</span> No API-key input field in the UI, by design.</li>
+          <li><span class="tick">✓</span> File parsing and all model calls run in Node-runtime routes, never in the browser.</li>
+        </ul>
+      </section>
+
+      <!-- STACK -->
+      <section id="stack">
+        <div class="section-head"><span class="section-num">10</span><h2>Tech stack</h2></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Layer</th><th>Choice</th></tr></thead>
+            <tbody>
+              <tr><td>Framework</td><td>Next.js 14 (App Router) + TypeScript</td></tr>
+              <tr><td>Styling</td><td>Tailwind CSS · lucide-react icons</td></tr>
+              <tr><td>AI SDK</td><td><code>@google/genai</code> with <code>responseSchema</code> structured output</td></tr>
+              <tr><td>File parsing</td><td><code>pdf-parse</code> (PDF) · <code>mammoth</code> (DOCX)</td></tr>
+              <tr><td>Export</td><td><code>@react-pdf/renderer</code> (PDF) · Blob download (Markdown)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<footer>
+  <span class="powered">Powered by <b>LogiByte Innovations</b></span>
+  <small>© 2026 LogiByte Innovations</small>
+</footer>
+
+<script>
+  // Theme toggle — stamps data-theme so it overrides the media query both ways.
+  (function () {
+    var btn = document.getElementById("themeBtn");
+    function current() {
+      var set = document.documentElement.getAttribute("data-theme");
+      if (set) return set;
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    btn.addEventListener("click", function () {
+      var next = current() === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+    });
+  })();
+
+  // Scrollspy for the TOC.
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll("nav.toc a"));
+    var map = {};
+    links.forEach(function (a) { map[a.getAttribute("href").slice(1)] = a; });
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          links.forEach(function (l) { l.classList.remove("active"); });
+          if (map[e.target.id]) map[e.target.id].classList.add("active");
+        }
+      });
+    }, { rootMargin: "-40% 0px -55% 0px" });
+    document.querySelectorAll("main section").forEach(function (s) { obs.observe(s); });
+  })();
+</script>
