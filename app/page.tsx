@@ -23,7 +23,7 @@ import type {
 const PHASE_LABEL: Record<ProcessingPhase, string> = {
   idle: "Analyze & Tailor",
   parsing: "Parsing resume…",
-  analyzing: "Analyzing gaps with gemini-3.1-pro…",
+  analyzing: "Analyzing gaps & drafting rewrites…",
   scoring: "Scoring resume…",
   "cover-letter": "Writing cover letter…",
   done: "Analyze & Tailor",

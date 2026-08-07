@@ -31,18 +31,23 @@ export function assertGeminiConfigured(): void {
 /**
  * Task-to-model routing.
  *
- * NOTE: these model IDs come from the project spec. Verify them against the
- * models your API key can access (https://ai.google.dev/gemini-api/docs/models)
- * and adjust here — every call site reads from this single table, so changing a
- * value propagates everywhere.
+ * These are real, generally-available Gemini models that support
+ * generateContent + JSON responseSchema. If your key/region can't access one,
+ * list what you can use and swap the value here (every call site reads this
+ * single table):
+ *
+ *   curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=$GEMINI_API_KEY" \
+ *     | grep '"name"'
+ *
+ * See https://ai.google.dev/gemini-api/docs/models for the current lineup.
  */
 export const MODELS = {
   /** Fast text parsing / extraction / real-time streaming. */
-  FLASH_FAST: "gemini-3.6-flash",
+  FLASH_FAST: "gemini-2.0-flash",
   /** Deep strategic ATS analysis, gap detection, line-by-line rewrites. */
-  PRO_STRATEGY: "gemini-3.1-pro",
+  PRO_STRATEGY: "gemini-2.5-pro",
   /** Auxiliary quick generation: cover letters, summary rewrites, interview prep. */
-  FLASH_AUX: "gemini-3.5-flash",
+  FLASH_AUX: "gemini-2.5-flash",
 } as const;
 
 export type ModelId = (typeof MODELS)[keyof typeof MODELS];

@@ -19,13 +19,17 @@ Every call reads its model from one table in [`lib/gemini.ts`](lib/gemini.ts):
 
 | Task                                              | Model              |
 | ------------------------------------------------- | ------------------ |
-| Phase 1 — fast text extraction / normalization    | `gemini-3.6-flash` |
-| Phase 2 — deep ATS audit, gap detection, rewrites | `gemini-3.1-pro`   |
-| Phase 3 — cover letter / auxiliary generation     | `gemini-3.5-flash` |
+| Phase 1 — fast text extraction / normalization    | `gemini-2.0-flash` |
+| Phase 2 — deep ATS audit, gap detection, rewrites | `gemini-2.5-pro`   |
+| Phase 3 — cover letter / auxiliary generation     | `gemini-2.5-flash` |
 
-> **⚠️ Verify these model IDs.** The IDs above come from the project spec. Confirm your
-> API key has access to them at <https://ai.google.dev/gemini-api/docs/models> and edit
-> the `MODELS` table in `lib/gemini.ts` if needed — one change propagates everywhere.
+> These are real, generally-available Gemini models. If your key/region can't access one,
+> list what you can use and swap the value in the `MODELS` table in
+> [`lib/gemini.ts`](lib/gemini.ts) — one change propagates everywhere:
+>
+> ```bash
+> curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=$GEMINI_API_KEY" | grep '"name"'
+> ```
 
 ## Setup
 
