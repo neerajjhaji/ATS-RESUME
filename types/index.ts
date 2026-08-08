@@ -95,7 +95,7 @@ export interface SurgicalTailor {
 
 export type Platform = "naukri" | "linkedin" | "other";
 
-/** A normalized job listing from a job-search API (e.g. Adzuna). */
+/** A normalized job listing from a job-search API (Adzuna / RemoteOK / Arbeitnow). */
 export interface JobListing {
   id: string;
   title: string;
@@ -106,6 +106,30 @@ export interface JobListing {
   created?: string;
   salary?: string;
   source: string;
+}
+
+/** Reusable candidate profile — the single source of truth for autofill/answers. */
+export interface MasterProfile {
+  fullName: string;
+  email: string;
+  phone: string;
+  location: string;
+  yearsExperience: string;
+  noticePeriod: string;
+  currentCtc: string;
+  expectedCtc: string;
+  workAuth: string;
+  linkedinUrl: string;
+  portfolioUrl: string;
+}
+
+/** Auto-drafted answers to recurring application/screening questions. */
+export interface AnswerPack {
+  short_intro: string;
+  why_this_company: string;
+  notice_period: string;
+  expected_ctc: string;
+  relocation: string;
 }
 
 /** One row in the application audit log. */

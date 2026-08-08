@@ -18,11 +18,16 @@ import {
   downloadResumePdf,
   renderResumeDataToText,
 } from "@/lib/export";
+import { DEFAULT_PROFILE, loadProfile, saveProfile } from "@/lib/profile";
+import { ProfilePanel } from "@/components/ProfilePanel";
+import { AnswerPackButton } from "@/components/AnswerPackButton";
+import { DigestPanel } from "@/components/DigestPanel";
 import type {
   ApplicationLogEntry,
   ApplyEligibility,
   JobDiscovery,
   JobListing,
+  MasterProfile,
   Platform,
   SurgicalTailor,
 } from "@/types";
@@ -91,8 +96,10 @@ export function AgentHub({ resumeText }: { resumeText: string }) {
   const [error, setError] = useState<string | null>(null);
 
   const [log, setLog] = useState<ApplicationLogEntry[]>([]);
+  const [profile, setProfile] = useState<MasterProfile>(DEFAULT_PROFILE);
 
   useEffect(() => {
+    setProfile(loadProfile());
     try {
       const raw = localStorage.getItem(LOG_KEY);
       if (raw) setLog(JSON.parse(raw));
@@ -100,6 +107,13 @@ export function AgentHub({ resumeText }: { resumeText: string }) {
       /* ignore */
     }
   }, []);
+
+  function updateProfile(p: MasterProfile) {
+    setProfile(p);
+    saveProfile(p);
+  }
+
+  const digestKeywords = discovery?.search_keywords?.slice(0, 4).join(" ") ?? "";
   useEffect(() => {
     try {
       localStorage.setItem(LOG_KEY, JSON.stringify(log));
@@ -256,19 +270,31 @@ export function AgentHub({ resumeText }: { resumeText: string }) {
         )}
       </section>
 
+      {/* Master profile */}
+      <ProfilePanel profile={profile} onChange={updateProfile} />
+
       {/* 2 · Live job feed */}
       <JobFeed
         resumeText={resumeText}
         hasResume={hasResume}
         locations={locations}
         discovery={discovery}
+        profile={profile}
         onLogged={addLogEntry}
       />
 
       {/* 3 · Manual tailor + gate */}
-      <TailorAndGate resumeText={resumeText} hasResume={hasResume} onLogged={addLogEntry} />
+      <TailorAndGate
+        resumeText={resumeText}
+        hasResume={hasResume}
+        profile={profile}
+        onLogged={addLogEntry}
+      />
 
-      {/* 3 · Audit log */}
+      {/* 4 · Daily digest */}
+      <DigestPanel profile={profile} keywords={digestKeywords} locations={locations} />
+
+      {/* Audit log */}
       <AuditLog log={log} onUpdateStatus={updateStatus} onClear={clearLog} />
     </div>
   );
@@ -299,12 +325,14 @@ function JobFeed({
   hasResume,
   locations,
   discovery,
+  profile,
   onLogged,
 }: {
   resumeText: string;
   hasResume: boolean;
   locations: string[];
   discovery: JobDiscovery | null;
+  profile: MasterProfile;
   onLogged: (e: ApplicationLogEntry) => void;
 }) {
   const [keywords, setKeywords] = useState("");
@@ -314,6 +342,8 @@ function JobFeed({
   const [rowState, setRowState] = useState<
     Record<string, { busy?: boolean; score?: number; status?: string }>
   >({});
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
 
   // Prefill keywords from discovery once it's available.
   useEffect(() => {
@@ -373,6 +403,17 @@ function JobFeed({
     }
   }
 
+  // Batch: tailor + gate every fetched job sequentially (avoids rate limits).
+  async function tailorAll() {
+    setBulkBusy(true);
+    setBulkProgress({ done: 0, total: jobs.length });
+    for (let i = 0; i < jobs.length; i++) {
+      await tailorJob(jobs[i]);
+      setBulkProgress({ done: i + 1, total: jobs.length });
+    }
+    setBulkBusy(false);
+  }
+
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
       <h2 className="mb-3 flex items-center gap-2 text-[15px] font-bold text-slate-900">
@@ -407,6 +448,25 @@ function JobFeed({
 
       {jobs.length > 0 && (
         <div className="mt-4 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-slate-500">{jobs.length} jobs found</p>
+            <button
+              onClick={tailorAll}
+              disabled={!hasResume || bulkBusy}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-900 disabled:opacity-50"
+            >
+              {bulkBusy ? (
+                <>
+                  <Loader2 size={12} className="animate-spin" /> Tailoring {bulkProgress.done}/
+                  {bulkProgress.total}…
+                </>
+              ) : (
+                <>
+                  <Wand2 size={12} /> Tailor &amp; gate all
+                </>
+              )}
+            </button>
+          </div>
           {jobs.map((job) => {
             const st = rowState[job.id];
             return (
@@ -457,6 +517,17 @@ function JobFeed({
                     <span className="text-xs text-rose-600">Failed — try again</span>
                   )}
                 </div>
+                {job.description && (
+                  <div className="mt-2">
+                    <AnswerPackButton
+                      profile={profile}
+                      jobDescription={job.description}
+                      company={job.company}
+                      title={job.title}
+                      disabled={!hasResume}
+                    />
+                  </div>
+                )}
               </div>
             );
           })}
@@ -469,10 +540,12 @@ function JobFeed({
 function TailorAndGate({
   resumeText,
   hasResume,
+  profile,
   onLogged,
 }: {
   resumeText: string;
   hasResume: boolean;
+  profile: MasterProfile;
   onLogged: (e: ApplicationLogEntry) => void;
 }) {
   const [company, setCompany] = useState("");
@@ -629,6 +702,14 @@ function TailorAndGate({
               </a>
             )}
           </div>
+
+          <AnswerPackButton
+            profile={profile}
+            jobDescription={jd}
+            company={company}
+            title={title}
+            disabled={!jd.trim()}
+          />
         </div>
       )}
     </section>

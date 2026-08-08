@@ -135,9 +135,11 @@ Quick score     ──► /api/ats-score      (standalone: resume-only ATS readi
 
 Agent Hub:
 Discover        ──► /api/agent/discover      (search keywords + target titles)
-Live job feed   ──► /api/agent/jobs          (Adzuna listings, filtered to your locations)
+Live job feed   ──► /api/agent/jobs          (Adzuna + RemoteOK + Arbeitnow, deduped)
 Surgical tailor ──► /api/agent/tailor-diff   (structure-preserving rewrite + score + dealbreakers)
 Eligibility gate──► /api/agent/prepare-apply (score ≥ 75 & no dealbreakers → review link)
+Answer pack     ──► /api/agent/answers       (screening answers from profile + JD)
+Daily digest    ──► /api/agent/digest        (emails fresh matches via Resend)
 ```
 
 ### Structured output
@@ -173,14 +175,33 @@ A second tab that turns the tailor into a job-discovery + application‑prep age
 
 1. **Discover** — from your resume, generate target titles + search keywords and ready-made
    Naukri/LinkedIn search links per location.
-2. **Live job feed** — pull real listings via the Adzuna API, filtered to your selected
-   locations (needs the optional Adzuna keys).
-3. **Surgical tailor + eligibility gate** — for a chosen job, rewrite the resume
-   (preserving structure, tone, and date formats — never inventing experience), score it,
-   and flag dealbreakers. A job is marked **Ready** only when `ats_match_score ≥ 75` **and**
-   there are zero dealbreakers; otherwise **Skipped**.
-4. **Audit log** — `Company | Job Title | Location | Platform | ATS % | Status`, persisted in
+2. **Master profile** — save your contact, notice period, current/expected CTC, work auth, and
+   links once (kept in your browser). Used to auto-draft answer packs.
+3. **Live job feed** — pull real listings from **Adzuna + RemoteOK + Arbeitnow** (deduped),
+   filtered to your selected locations. RemoteOK/Arbeitnow are keyless; Adzuna needs its keys.
+4. **Tailor & gate (single or batch)** — for one job, or **"Tailor & gate all"** across the
+   whole feed, rewrite the resume (preserving structure, tone, date formats — never inventing
+   experience), score it, and flag dealbreakers. Marked **Ready** only when
+   `ats_match_score ≥ 75` **and** zero dealbreakers; otherwise **Skipped**.
+5. **Answer pack** — per job, auto-draft truthful answers to the recurring screening questions
+   ("tell me about yourself", "why this company", notice period, expected CTC, relocation) with
+   copy buttons, so filling a form is seconds.
+6. **Audit log** — `Company | Job Title | Location | Platform | ATS % | Status`, persisted in
    your browser, with one-click PDF export and a review link.
+7. **Daily digest** — email yourself fresh matches on demand, or on a schedule (see below).
+
+### Daily digest (scheduled)
+
+The digest route fetches fresh listings and emails them via [Resend](https://resend.com).
+Set `RESEND_API_KEY`, `DIGEST_FROM`, and `DIGEST_TO` in `.env.local` (see `.env.example`), then
+either click **"Email me these jobs now"** in the hub, or automate it with the included
+[`.github/workflows/daily-digest.yml`](.github/workflows/daily-digest.yml):
+
+- Deploy the app (e.g. Vercel) so the route has a public URL.
+- Add repo **secrets**: `APP_URL` (deployed base URL), `CRON_SECRET` (must match the app's
+  `CRON_SECRET` env), and `DIGEST_BODY` (JSON, e.g.
+  `{"keywords":"Backend Engineer Go","locations":["Navi Mumbai","Mumbai","Remote"],"to":"you@email.com"}`).
+- The workflow runs weekday mornings (09:00 IST) and can be triggered manually.
 
 > ### Why there's no fully-automated auto-apply
 > The Agent Hub is **human-in-the-loop by design**. It does **not** log into LinkedIn/Naukri
@@ -209,16 +230,20 @@ resume-tailor/
 │  │  ├─ ats-score/route.ts     # standalone ATS score (no JD)
 │  │  └─ agent/
 │  │     ├─ discover/route.ts       # keywords + target titles
-│  │     ├─ jobs/route.ts           # Adzuna live job feed
+│  │     ├─ jobs/route.ts           # multi-source live job feed
 │  │     ├─ tailor-diff/route.ts    # surgical tailor + score + dealbreakers
-│  │     └─ prepare-apply/route.ts  # eligibility gate (human submits)
+│  │     ├─ prepare-apply/route.ts  # eligibility gate (human submits)
+│  │     ├─ answers/route.ts        # screening answer pack
+│  │     └─ digest/route.ts         # daily digest email (Resend)
 │  ├─ globals.css · layout.tsx
 │  └─ page.tsx                  # tabbed orchestrator (Tailor + Agent Hub)
-├─ components/                  # InputPanel, ScoreGauge, KeywordList,
-│                               # RecommendationsFeed, ResumeEditor, CoverLetterCard,
-│                               # StandaloneScoreCard, TemplateGallery, AgentHub, Brand
-├─ lib/                         # gemini, schemas, fileParser, export, templates, jobs
+├─ components/                  # InputPanel, ScoreGauge, KeywordList, RecommendationsFeed,
+│                               # ResumeEditor, CoverLetterCard, StandaloneScoreCard,
+│                               # TemplateGallery, AgentHub, ProfilePanel, AnswerPackButton,
+│                               # DigestPanel, Brand
+├─ lib/                         # gemini, schemas, fileParser, export, templates, jobs, profile
 ├─ types/index.ts
+├─ .github/workflows/daily-digest.yml
 └─ .env.example
 ```
 

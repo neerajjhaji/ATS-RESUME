@@ -236,3 +236,31 @@ export const surgicalTailorSchema = {
   },
   required: ["ats_match_score", "dealbreaker_flags", "key_updates_made", "tailored_resume_data"],
 };
+
+/** Auto-drafted answers to recurring screening questions, grounded in the profile + JD. */
+export const answerPackSchema = {
+  type: Type.OBJECT,
+  properties: {
+    short_intro: {
+      type: Type.STRING,
+      description: "A 2-3 sentence 'tell me about yourself' intro tailored to the role. Truthful to the profile.",
+    },
+    why_this_company: {
+      type: Type.STRING,
+      description: "3-4 sentence answer to 'Why do you want to work here?', tied to the JD/company.",
+    },
+    notice_period: {
+      type: Type.STRING,
+      description: "A concise notice-period answer using the candidate's stated notice period.",
+    },
+    expected_ctc: {
+      type: Type.STRING,
+      description: "A concise expected-compensation answer using the candidate's expected CTC.",
+    },
+    relocation: {
+      type: Type.STRING,
+      description: "A concise answer about relocation/work-location fit for this role's location.",
+    },
+  },
+  required: ["short_intro", "why_this_company", "notice_period", "expected_ctc", "relocation"],
+};

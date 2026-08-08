@@ -1,0 +1,27 @@
+name: Daily job digest
+
+# Emails you a fresh job digest by calling the deployed /api/agent/digest route.
+# Set repo secrets: APP_URL (your deployed base URL), CRON_SECRET (must match the
+# app's CRON_SECRET env), and DIGEST_BODY (JSON, e.g.
+#   {"keywords":"Backend Engineer Go Kubernetes","locations":["Navi Mumbai","Mumbai","Remote"],"to":"you@email.com"}).
+# The app itself must have RESEND_API_KEY + DIGEST_FROM configured in its env.
+
+on:
+  schedule:
+    - cron: "30 3 * * 1-5" # 09:00 IST, weekdays
+  workflow_dispatch: {}
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger digest email
+        run: |
+          curl -fsS -X POST "$APP_URL/api/agent/digest" \
+            -H "Content-Type: application/json" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            -d "$DIGEST_BODY"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          DIGEST_BODY: ${{ secrets.DIGEST_BODY }}
