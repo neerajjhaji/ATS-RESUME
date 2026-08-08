@@ -23,6 +23,8 @@ import { ProfilePanel } from "@/components/ProfilePanel";
 import { AnswerPackButton } from "@/components/AnswerPackButton";
 import { DigestPanel } from "@/components/DigestPanel";
 import { AgentOrchestrator } from "@/components/AgentOrchestrator";
+import { PrepPackButton } from "@/components/PrepPackButton";
+import { SkillsGapPanel } from "@/components/SkillsGapPanel";
 import type {
   ApplicationLogEntry,
   ApplyEligibility,
@@ -152,7 +154,13 @@ export function AgentHub({ resumeText }: { resumeText: string }) {
     setLog((prev) => [entry, ...prev]);
   }
   function updateStatus(id: string, status: ApplicationLogEntry["status"]) {
-    setLog((prev) => prev.map((e) => (e.id === id ? { ...e, status } : e)));
+    setLog((prev) =>
+      prev.map((e) =>
+        e.id === id
+          ? { ...e, status, appliedAt: status === "Applied" && !e.appliedAt ? Date.now() : e.appliedAt }
+          : e
+      )
+    );
   }
   function clearLog() {
     setLog([]);
@@ -303,7 +311,10 @@ export function AgentHub({ resumeText }: { resumeText: string }) {
       {/* 4 · Daily digest */}
       <DigestPanel profile={profile} keywords={digestKeywords} locations={locations} />
 
-      {/* Audit log */}
+      {/* Skills-gap intelligence */}
+      <SkillsGapPanel log={log} />
+
+      {/* Pipeline / audit log */}
       <AuditLog log={log} onUpdateStatus={updateStatus} onClear={clearLog} />
     </div>
   );
@@ -402,6 +413,7 @@ function JobFeed({
         status: eligibility.eligible ? "Ready" : "Skipped",
         reason: eligibility.reason,
         applyUrl: job.applyUrl,
+        dealbreakers: tailor.dealbreaker_flags,
       });
       setRowState((s) => ({
         ...s,
@@ -527,9 +539,16 @@ function JobFeed({
                   )}
                 </div>
                 {job.description && (
-                  <div className="mt-2">
+                  <div className="mt-2 space-y-2">
                     <AnswerPackButton
                       profile={profile}
+                      jobDescription={job.description}
+                      company={job.company}
+                      title={job.title}
+                      disabled={!hasResume}
+                    />
+                    <PrepPackButton
+                      resumeText={resumeText}
                       jobDescription={job.description}
                       company={job.company}
                       title={job.title}
@@ -591,6 +610,7 @@ function TailorAndGate({
         status: eligibility.eligible ? "Ready" : "Skipped",
         reason: eligibility.reason,
         applyUrl: jobUrl || undefined,
+        dealbreakers: tailor.dealbreaker_flags,
       });
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Tailoring failed.");
@@ -719,6 +739,13 @@ function TailorAndGate({
             title={title}
             disabled={!jd.trim()}
           />
+          <PrepPackButton
+            resumeText={resumeText}
+            jobDescription={jd}
+            company={company}
+            title={title}
+            disabled={!jd.trim()}
+          />
         </div>
       )}
     </section>
@@ -734,11 +761,26 @@ function AuditLog({
   onUpdateStatus: (id: string, status: ApplicationLogEntry["status"]) => void;
   onClear: () => void;
 }) {
+  const STATUSES: ApplicationLogEntry["status"][] = [
+    "Ready",
+    "Applied",
+    "Interview",
+    "Offer",
+    "Rejected",
+    "Skipped",
+  ];
   const badge: Record<ApplicationLogEntry["status"], string> = {
-    Applied: "bg-emerald-100 text-emerald-700",
     Ready: "bg-brand-100 text-brand-700",
+    Applied: "bg-emerald-100 text-emerald-700",
+    Interview: "bg-violet-100 text-violet-700",
+    Offer: "bg-amber-100 text-amber-800",
+    Rejected: "bg-slate-200 text-slate-500",
     Skipped: "bg-slate-200 text-slate-600",
   };
+  const FIVE_DAYS = 5 * 24 * 60 * 60 * 1000;
+  function needsFollowUp(e: ApplicationLogEntry): boolean {
+    return e.status === "Applied" && Boolean(e.appliedAt) && Date.now() - (e.appliedAt as number) > FIVE_DAYS;
+  }
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
@@ -780,18 +822,25 @@ function AuditLog({
                     {e.atsMatch}
                   </td>
                   <td className="px-2 py-2">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${badge[e.status]}`}>
-                      {e.status}
-                    </span>
+                    <select
+                      value={e.status}
+                      onChange={(ev) =>
+                        onUpdateStatus(e.id, ev.target.value as ApplicationLogEntry["status"])
+                      }
+                      className={`cursor-pointer rounded-full px-2 py-0.5 text-xs font-semibold outline-none ${badge[e.status]}`}
+                    >
+                      {STATUSES.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
                   </td>
                   <td className="px-2 py-2 text-right">
-                    {e.status === "Ready" && (
-                      <button
-                        onClick={() => onUpdateStatus(e.id, "Applied")}
-                        className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:border-emerald-300 hover:text-emerald-700"
-                      >
-                        Mark applied
-                      </button>
+                    {needsFollowUp(e) && (
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                        follow up
+                      </span>
                     )}
                   </td>
                 </tr>

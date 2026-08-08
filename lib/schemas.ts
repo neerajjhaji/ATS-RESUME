@@ -237,6 +237,63 @@ export const surgicalTailorSchema = {
   required: ["ats_match_score", "dealbreaker_flags", "key_updates_made", "tailored_resume_data"],
 };
 
+/** Upskilling plan derived from recurring dealbreakers across skipped jobs. */
+export const skillsGapSchema = {
+  type: Type.OBJECT,
+  properties: {
+    summary: {
+      type: Type.STRING,
+      description: "2-3 sentence summary of the biggest systemic gaps and the payoff of closing them.",
+    },
+    items: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          skill: { type: Type.STRING },
+          priority: { type: Type.STRING, description: "High | Medium | Low" },
+          weeks: { type: Type.INTEGER, description: "Realistic weeks to reach job-ready proficiency." },
+          plan: { type: Type.STRING, description: "A concrete, practical learning plan for this skill." },
+        },
+        required: ["skill", "priority", "weeks", "plan"],
+      },
+    },
+  },
+  required: ["summary", "items"],
+};
+
+/** Per-role interview prep pack. */
+export const prepPackSchema = {
+  type: Type.OBJECT,
+  properties: {
+    company_brief: {
+      type: Type.STRING,
+      description: "3-5 sentence brief on the role and what they'll likely care about, inferred from the JD.",
+    },
+    interview_tips: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "5-7 specific, actionable interview tips tailored to THIS role.",
+    },
+    questions: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          question: { type: Type.STRING },
+          star_answer: {
+            type: Type.STRING,
+            description: "A concise STAR-format answer grounded in the candidate's real resume.",
+          },
+        },
+        required: ["question", "star_answer"],
+      },
+      description: "6-8 likely interview questions with tailored STAR answers.",
+    },
+  },
+  required: ["company_brief", "interview_tips", "questions"],
+};
+
 /** The agent planner's structured plan for a run. */
 export const planSchema = {
   type: Type.OBJECT,

@@ -1,10 +1,19 @@
-name: Daily job digest
+name: Nightly agent run
 
-# Emails you a fresh job digest by calling the deployed /api/agent/digest route.
-# Set repo secrets: APP_URL (your deployed base URL), CRON_SECRET (must match the
-# app's CRON_SECRET env), and DIGEST_BODY (JSON, e.g.
-#   {"keywords":"Backend Engineer Go Kubernetes","locations":["Navi Mumbai","Mumbai","Remote"],"to":"you@email.com"}).
-# The app itself must have RESEND_API_KEY + DIGEST_FROM configured in its env.
+# Runs the full agent unattended (plan-light: fetch -> self-critique tailor ->
+# gate -> rank) and emails a ranked application kit, by calling the deployed
+# /api/agent/run route.
+#
+# Repo secrets to set:
+#   APP_URL      your deployed base URL (e.g. https://your-app.vercel.app)
+#   CRON_SECRET  must match the app's CRON_SECRET env
+#   DIGEST_BODY  JSON, e.g.
+#     {"resumeText":"<your full resume text>","keywords":"Backend Engineer Go",
+#      "locations":["Navi Mumbai","Mumbai","Remote"],"minScore":75,"maxTailor":4,
+#      "email":"you@email.com"}
+# The app must also have RESEND_API_KEY + DIGEST_FROM set for the email to send.
+#
+# Prefer a lighter listing-only email? Point the curl at /api/agent/digest instead.
 
 on:
   schedule:
@@ -12,12 +21,12 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  digest:
+  run:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger digest email
+      - name: Trigger agent run + email kit
         run: |
-          curl -fsS -X POST "$APP_URL/api/agent/digest" \
+          curl -fsS -X POST "$APP_URL/api/agent/run" \
             -H "Content-Type: application/json" \
             -H "x-cron-secret: $CRON_SECRET" \
             -d "$DIGEST_BODY"

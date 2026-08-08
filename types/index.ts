@@ -149,7 +149,16 @@ export interface AnswerPack {
   relocation: string;
 }
 
-/** One row in the application audit log. */
+/** Pipeline stages for a tracked application. */
+export type ApplicationStatus =
+  | "Ready"
+  | "Applied"
+  | "Interview"
+  | "Offer"
+  | "Rejected"
+  | "Skipped";
+
+/** One row in the application audit log / pipeline tracker. */
 export interface ApplicationLogEntry {
   id: string;
   company: string;
@@ -157,9 +166,42 @@ export interface ApplicationLogEntry {
   location: string;
   platform: Platform;
   atsMatch: number;
-  status: "Applied" | "Skipped" | "Ready";
+  status: ApplicationStatus;
   reason?: string;
   applyUrl?: string;
+  dealbreakers?: string[];
+  appliedAt?: number;
+  notes?: string;
+}
+
+/** Aggregated missing-skill counts across skipped jobs. */
+export interface SkillGap {
+  skill: string;
+  count: number;
+}
+
+export interface UpskillItem {
+  skill: string;
+  priority: "High" | "Medium" | "Low";
+  weeks: number;
+  plan: string;
+}
+
+export interface SkillsGapPlan {
+  summary: string;
+  items: UpskillItem[];
+}
+
+export interface InterviewQA {
+  question: string;
+  star_answer: string;
+}
+
+/** Per-role interview prep: brief + tips + likely questions with STAR answers. */
+export interface PrepPack {
+  company_brief: string;
+  interview_tips: string[];
+  questions: InterviewQA[];
 }
 
 /** Eligibility verdict from the Apply Assist gate (human submits, not the app). */

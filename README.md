@@ -145,6 +145,9 @@ Autonomous agent:
 Planner         ──► /api/agent/plan          (LLM decides keywords/titles/threshold/how many)
 Self-critique   ──► /api/agent/tailor-loop   (re-tailors until match ≥ threshold; never fabricates)
 Orchestrator    ──► client loop: plan → jobs → dedupe(memory) → tailor-loop → gate → rank
+Unattended run  ──► /api/agent/run           (server-side full run + emails a ranked kit)
+Skills gap      ──► /api/agent/skills-gap    (blockers across skipped jobs → upskilling plan)
+Interview prep  ──► /api/agent/prep          (brief + role tips + STAR questions per job)
 ```
 
 ### Structured output
@@ -197,9 +200,16 @@ A second tab that turns the tailor into a job-discovery + application‑prep age
 5. **Answer pack** — per job, auto-draft truthful answers to the recurring screening questions
    ("tell me about yourself", "why this company", notice period, expected CTC, relocation) with
    copy buttons, so filling a form is seconds.
-6. **Audit log** — `Company | Job Title | Location | Platform | ATS % | Status`, persisted in
-   your browser, with one-click PDF export and a review link.
-7. **Daily digest** — email yourself fresh matches on demand, or on a schedule (see below).
+6. **Interview prep** — per job: a brief, **role-specific interview tips**, and likely
+   questions with STAR answers grounded in your resume.
+7. **Pipeline tracker** — the audit log is a pipeline: set each row's stage
+   (Ready → Applied → Interview → Offer / Rejected / Skipped); applied rows older than 5 days
+   get a **"follow up"** flag. Persisted in your browser.
+8. **Skills-gap intelligence** — the agent aggregates the dealbreakers from skipped jobs and
+   turns the most common blockers into a **prioritized, time-boxed upskilling plan** — rejections
+   become a roadmap, and it improves as you run more.
+9. **Daily digest / unattended run** — email yourself fresh matches on demand, or schedule the
+   **full agent** to run nightly and email a ranked application kit (see below).
 
 ### Daily digest (scheduled)
 
@@ -247,13 +257,17 @@ resume-tailor/
 │  │     ├─ answers/route.ts        # screening answer pack
 │  │     ├─ digest/route.ts         # daily digest email (Resend)
 │  │     ├─ plan/route.ts           # LLM planner (decides the run)
-│  │     └─ tailor-loop/route.ts    # self-critique tailoring loop
+│  │     ├─ tailor-loop/route.ts    # self-critique tailoring loop
+│  │     ├─ run/route.ts            # unattended server-side run + email kit
+│  │     ├─ skills-gap/route.ts     # upskilling plan from blockers
+│  │     └─ prep/route.ts           # interview prep pack
 │  ├─ globals.css · layout.tsx
 │  └─ page.tsx                  # tabbed orchestrator (Tailor + Agent Hub)
 ├─ components/                  # InputPanel, ScoreGauge, KeywordList, RecommendationsFeed,
 │                               # ResumeEditor, CoverLetterCard, StandaloneScoreCard,
 │                               # TemplateGallery, AgentHub, AgentOrchestrator, ProfilePanel,
-│                               # AnswerPackButton, DigestPanel, Brand
+│                               # AnswerPackButton, PrepPackButton, SkillsGapPanel,
+│                               # DigestPanel, Brand
 ├─ lib/                         # gemini, schemas, fileParser, export, templates, jobs,
 │                               # profile, agentMemory
 ├─ types/index.ts

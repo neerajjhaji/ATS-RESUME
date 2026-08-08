@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { downloadResumePdf, renderResumeDataToText } from "@/lib/export";
 import { AnswerPackButton } from "@/components/AnswerPackButton";
+import { PrepPackButton } from "@/components/PrepPackButton";
 import {
   clearMemory,
   hasSeen,
@@ -161,6 +162,7 @@ export function AgentOrchestrator({
           status: eligibility.eligible ? "Ready" : "Skipped",
           reason: eligibility.reason,
           applyUrl: job.applyUrl,
+          dealbreakers: tailor.dealbreaker_flags,
         });
 
         const trail = tailor.attempts?.map((a) => a.score).join("→");
@@ -295,9 +297,16 @@ export function AgentOrchestrator({
                   )}
                 </div>
                 {item.job.description && (
-                  <div className="mt-2">
+                  <div className="mt-2 space-y-2">
                     <AnswerPackButton
                       profile={profile}
+                      jobDescription={item.job.description}
+                      company={item.job.company}
+                      title={item.job.title}
+                      disabled={!hasResume}
+                    />
+                    <PrepPackButton
+                      resumeText={resumeText}
                       jobDescription={item.job.description}
                       company={item.job.company}
                       title={item.job.title}
