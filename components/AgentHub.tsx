@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import {
   AlertTriangle,
+  Briefcase,
   CheckCircle2,
   Download,
   ExternalLink,
   Loader2,
   MapPin,
   Radar,
+  Search,
   ShieldCheck,
   Wand2,
 } from "lucide-react";
@@ -20,6 +22,7 @@ import type {
   ApplicationLogEntry,
   ApplyEligibility,
   JobDiscovery,
+  JobListing,
   Platform,
   SurgicalTailor,
 } from "@/types";
@@ -39,6 +42,44 @@ function searchUrl(platform: Platform, keyword: string, location: string): strin
   }
   // Naukri uses slug-style search paths.
   return `https://www.naukri.com/${slug(keyword)}-jobs-in-${slug(location)}`;
+}
+
+function detectPlatform(url: string): Platform {
+  const u = (url || "").toLowerCase();
+  if (u.includes("linkedin.")) return "linkedin";
+  if (u.includes("naukri.")) return "naukri";
+  return "other";
+}
+
+/** Shared: surgically tailor for a JD, then run the eligibility gate. */
+async function runTailorAndGate(
+  resumeText: string,
+  jd: string,
+  jobUrl: string,
+  platform: Platform
+): Promise<{ tailor: SurgicalTailor; eligibility: ApplyEligibility }> {
+  const tRes = await fetch("/api/agent/tailor-diff", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ originalResumeText: resumeText, jobDescription: jd }),
+  });
+  const tData = await tRes.json();
+  if (!tRes.ok || tData.error) throw new Error(tData.error || "Tailoring failed.");
+
+  const pRes = await fetch("/api/agent/prepare-apply", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jobUrl: jobUrl || "about:blank",
+      platform,
+      ats_match_score: tData.ats_match_score,
+      dealbreaker_flags: tData.dealbreaker_flags,
+    }),
+  });
+  const pData = await pRes.json();
+  if (!pRes.ok || pData.error) throw new Error(pData.error || "Eligibility gate failed.");
+
+  return { tailor: tData as SurgicalTailor, eligibility: pData as ApplyEligibility };
 }
 
 export function AgentHub({ resumeText }: { resumeText: string }) {
@@ -215,7 +256,16 @@ export function AgentHub({ resumeText }: { resumeText: string }) {
         )}
       </section>
 
-      {/* 2 · Tailor + gate */}
+      {/* 2 · Live job feed */}
+      <JobFeed
+        resumeText={resumeText}
+        hasResume={hasResume}
+        locations={locations}
+        discovery={discovery}
+        onLogged={addLogEntry}
+      />
+
+      {/* 3 · Manual tailor + gate */}
       <TailorAndGate resumeText={resumeText} hasResume={hasResume} onLogged={addLogEntry} />
 
       {/* 3 · Audit log */}
@@ -241,6 +291,178 @@ function Chips({ label, items, tone }: { label: string; items: string[]; tone: "
         ))}
       </div>
     </div>
+  );
+}
+
+function JobFeed({
+  resumeText,
+  hasResume,
+  locations,
+  discovery,
+  onLogged,
+}: {
+  resumeText: string;
+  hasResume: boolean;
+  locations: string[];
+  discovery: JobDiscovery | null;
+  onLogged: (e: ApplicationLogEntry) => void;
+}) {
+  const [keywords, setKeywords] = useState("");
+  const [jobs, setJobs] = useState<JobListing[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [rowState, setRowState] = useState<
+    Record<string, { busy?: boolean; score?: number; status?: string }>
+  >({});
+
+  // Prefill keywords from discovery once it's available.
+  useEffect(() => {
+    if (!keywords && discovery?.search_keywords?.length) {
+      setKeywords(discovery.search_keywords.slice(0, 4).join(" "));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [discovery]);
+
+  async function fetchJobs() {
+    setErr(null);
+    setLoading(true);
+    setJobs([]);
+    try {
+      const res = await fetch("/api/agent/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keywords, locations }),
+      });
+      const data = (await res.json()) as { jobs?: JobListing[]; error?: string };
+      if (!res.ok || data.error) throw new Error(data.error || "Job fetch failed.");
+      setJobs(data.jobs ?? []);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Job fetch failed.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function tailorJob(job: JobListing) {
+    setRowState((s) => ({ ...s, [job.id]: { busy: true } }));
+    try {
+      const platform = detectPlatform(job.applyUrl);
+      const { tailor, eligibility } = await runTailorAndGate(
+        resumeText,
+        job.description || job.title,
+        job.applyUrl,
+        platform
+      );
+      onLogged({
+        id: `${Date.now()}-${job.id}`,
+        company: job.company,
+        jobTitle: job.title,
+        location: job.location,
+        platform,
+        atsMatch: tailor.ats_match_score,
+        status: eligibility.eligible ? "Ready" : "Skipped",
+        reason: eligibility.reason,
+        applyUrl: job.applyUrl,
+      });
+      setRowState((s) => ({
+        ...s,
+        [job.id]: { score: tailor.ats_match_score, status: eligibility.eligible ? "Ready" : "Skipped" },
+      }));
+    } catch {
+      setRowState((s) => ({ ...s, [job.id]: { status: "Error" } }));
+    }
+  }
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
+      <h2 className="mb-3 flex items-center gap-2 text-[15px] font-bold text-slate-900">
+        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-violet-600 text-white">
+          <Briefcase size={13} />
+        </span>
+        2 · Live job feed
+      </h2>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          value={keywords}
+          onChange={(e) => setKeywords(e.target.value)}
+          placeholder="Keywords (e.g. Backend Engineer Go Kubernetes)"
+          className="min-w-[220px] flex-1 rounded-lg border border-slate-300 p-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+        />
+        <button
+          onClick={fetchJobs}
+          disabled={loading || locations.length === 0}
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-card transition hover:from-brand-700 hover:to-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+          {loading ? "Fetching…" : "Fetch live jobs"}
+        </button>
+      </div>
+      <p className="mt-1.5 text-[11px] text-slate-400">
+        Real listings via the Adzuna API, filtered to your selected locations. Needs
+        ADZUNA_APP_ID / ADZUNA_APP_KEY in <code>.env.local</code>.
+      </p>
+
+      {err && <p className="mt-3 text-sm text-rose-600">{err}</p>}
+
+      {jobs.length > 0 && (
+        <div className="mt-4 space-y-2.5">
+          {jobs.map((job) => {
+            const st = rowState[job.id];
+            return (
+              <div key={job.id} className="rounded-xl border border-slate-200 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-800">{job.title}</p>
+                    <p className="truncate text-xs text-slate-500">
+                      {job.company} · {job.location}
+                      {job.salary ? ` · ${job.salary}` : ""}
+                    </p>
+                  </div>
+                  {st?.status && st.status !== "Error" && (
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        st.status === "Ready"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-slate-200 text-slate-600"
+                      }`}
+                    >
+                      {st.score}% · {st.status}
+                    </span>
+                  )}
+                </div>
+                {job.description && (
+                  <p className="mt-1.5 line-clamp-2 text-xs text-slate-500">{job.description}</p>
+                )}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => tailorJob(job)}
+                    disabled={!hasResume || st?.busy}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-700 disabled:opacity-50"
+                  >
+                    {st?.busy ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+                    {st?.busy ? "Tailoring…" : "Auto-tailor & gate"}
+                  </button>
+                  {job.applyUrl && (
+                    <a
+                      href={job.applyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-brand-300 hover:text-brand-700"
+                    >
+                      Open listing <ExternalLink size={11} />
+                    </a>
+                  )}
+                  {st?.status === "Error" && (
+                    <span className="text-xs text-rose-600">Failed — try again</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -273,38 +495,19 @@ function TailorAndGate({
     setResult(null);
     setEligibility(null);
     try {
-      const tRes = await fetch("/api/agent/tailor-diff", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ originalResumeText: resumeText, jobDescription: jd }),
-      });
-      const tData = (await tRes.json()) as SurgicalTailor | { error: string };
-      if (!tRes.ok || "error" in tData) throw new Error("error" in tData ? tData.error : "Failed.");
-      setResult(tData);
-
-      const pRes = await fetch("/api/agent/prepare-apply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jobUrl: jobUrl || "about:blank",
-          platform,
-          ats_match_score: tData.ats_match_score,
-          dealbreaker_flags: tData.dealbreaker_flags,
-        }),
-      });
-      const pData = (await pRes.json()) as ApplyEligibility | { error: string };
-      if (!pRes.ok || "error" in pData) throw new Error("error" in pData ? pData.error : "Failed.");
-      setEligibility(pData);
+      const { tailor, eligibility } = await runTailorAndGate(resumeText, jd, jobUrl, platform);
+      setResult(tailor);
+      setEligibility(eligibility);
 
       onLogged({
-        id: `${Date.now()}-${Math.round(tData.ats_match_score)}`,
+        id: `${Date.now()}-${Math.round(tailor.ats_match_score)}`,
         company: company.trim(),
         jobTitle: title.trim(),
         location,
         platform,
-        atsMatch: tData.ats_match_score,
-        status: pData.eligible ? "Ready" : "Skipped",
-        reason: pData.reason,
+        atsMatch: tailor.ats_match_score,
+        status: eligibility.eligible ? "Ready" : "Skipped",
+        reason: eligibility.reason,
         applyUrl: jobUrl || undefined,
       });
     } catch (e) {
@@ -332,7 +535,7 @@ function TailorAndGate({
         <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-violet-600 text-white">
           <Wand2 size={13} />
         </span>
-        2 · Tailor &amp; check eligibility
+        3 · Tailor a specific job &amp; check eligibility
       </h2>
 
       {err && <p className="mb-3 text-sm text-rose-600">{err}</p>}

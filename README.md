@@ -91,6 +91,10 @@ cp .env.example .env.local
 
 Open `.env.local` and set `GEMINI_API_KEY=your_real_key_here`.
 
+_(Optional)_ For the Agent Hub live job feed, also add a free
+[Adzuna](https://developer.adzuna.com) key: `ADZUNA_APP_ID` and `ADZUNA_APP_KEY`.
+**Never put site passwords in `.env` — only API keys.**
+
 **6. ⚠️ Fix the model IDs (required).** Edit the `MODELS` table in [`lib/gemini.ts`](lib/gemini.ts)
 — the spec's IDs don't exist in the API. Use real ones your key can access, e.g.:
 
@@ -124,10 +128,16 @@ Tailwind CSS IntelliSense (`bradlc.vscode-tailwindcss`), Prettier (`esbenp.prett
 ## How it works
 
 ```
-Upload PDF/DOCX ──► /api/parse       (Phase 1: extract + normalize) ─► clean resume text
-Analyze         ──► /api/analyze     (Phase 2: match_score + gaps + actionable_changes)
-Cover letter    ──► /api/cover-letter (Phase 3: tailored letter)
-Quick score     ──► /api/ats-score   (standalone: resume-only ATS readiness, no JD)
+Upload PDF/DOCX ──► /api/parse          (Phase 1: extract + normalize) ─► clean resume text
+Analyze         ──► /api/analyze        (Phase 2: match_score + gaps + actionable_changes)
+Cover letter    ──► /api/cover-letter   (Phase 3: tailored letter)
+Quick score     ──► /api/ats-score      (standalone: resume-only ATS readiness, no JD)
+
+Agent Hub:
+Discover        ──► /api/agent/discover      (search keywords + target titles)
+Live job feed   ──► /api/agent/jobs          (Adzuna listings, filtered to your locations)
+Surgical tailor ──► /api/agent/tailor-diff   (structure-preserving rewrite + score + dealbreakers)
+Eligibility gate──► /api/agent/prepare-apply (score ≥ 75 & no dealbreakers → review link)
 ```
 
 ### Structured output
@@ -156,6 +166,29 @@ Phase 2 enforces this JSON shape via `config.responseSchema` (see
 }
 ```
 
+## Agent Hub
+
+A second tab that turns the tailor into a job-discovery + application‑prep agent for
+**Navi Mumbai, Mumbai, and Remote** roles across **Naukri** and **LinkedIn**.
+
+1. **Discover** — from your resume, generate target titles + search keywords and ready-made
+   Naukri/LinkedIn search links per location.
+2. **Live job feed** — pull real listings via the Adzuna API, filtered to your selected
+   locations (needs the optional Adzuna keys).
+3. **Surgical tailor + eligibility gate** — for a chosen job, rewrite the resume
+   (preserving structure, tone, and date formats — never inventing experience), score it,
+   and flag dealbreakers. A job is marked **Ready** only when `ats_match_score ≥ 75` **and**
+   there are zero dealbreakers; otherwise **Skipped**.
+4. **Audit log** — `Company | Job Title | Location | Platform | ATS % | Status`, persisted in
+   your browser, with one-click PDF export and a review link.
+
+> ### Why there's no fully-automated auto-apply
+> The Agent Hub is **human-in-the-loop by design**. It does **not** log into LinkedIn/Naukri
+> or auto-submit applications. Driving those sites with stored session cookies or passwords
+> violates their Terms of Service and risks a **permanent account ban**, and there is no
+> official job-seeker API for submitting applications. The hub automates everything up to the
+> submit click, then hands you a tailored PDF + a review link so **you** submit.
+
 ## Interactive dashboard
 
 - **Left panel** — inputs + ATS audit: score gauge, keyword gap chips (click a missing
@@ -172,21 +205,29 @@ resume-tailor/
 │  ├─ api/
 │  │  ├─ parse/route.ts         # Phase 1 — extraction (flash)
 │  │  ├─ analyze/route.ts       # Phase 2 — ATS audit (pro)
-│  │  └─ cover-letter/route.ts  # Phase 3 — cover letter (flash-aux)
-│  ├─ globals.css
-│  ├─ layout.tsx
-│  └─ page.tsx                  # split-panel orchestrator + state
+│  │  ├─ cover-letter/route.ts  # Phase 3 — cover letter (flash-aux)
+│  │  ├─ ats-score/route.ts     # standalone ATS score (no JD)
+│  │  └─ agent/
+│  │     ├─ discover/route.ts       # keywords + target titles
+│  │     ├─ jobs/route.ts           # Adzuna live job feed
+│  │     ├─ tailor-diff/route.ts    # surgical tailor + score + dealbreakers
+│  │     └─ prepare-apply/route.ts  # eligibility gate (human submits)
+│  ├─ globals.css · layout.tsx
+│  └─ page.tsx                  # tabbed orchestrator (Tailor + Agent Hub)
 ├─ components/                  # InputPanel, ScoreGauge, KeywordList,
-│                               # RecommendationsFeed, ResumeEditor,
-│                               # CoverLetterCard, ResumePdfDocument
-├─ lib/                         # gemini (client+routing), schemas, fileParser, export
+│                               # RecommendationsFeed, ResumeEditor, CoverLetterCard,
+│                               # StandaloneScoreCard, TemplateGallery, AgentHub, Brand
+├─ lib/                         # gemini, schemas, fileParser, export, templates, jobs
 ├─ types/index.ts
 └─ .env.example
 ```
 
 ## Security notes
 
-- The API key lives only in `.env.local` (gitignored) and is used server-side.
-- No key input field exists in the UI by design.
-- File parsing and all Gemini calls run in Node runtime API routes, never the browser.
+- API keys (`GEMINI_API_KEY`, optional `ADZUNA_APP_ID` / `ADZUNA_APP_KEY`) live only in
+  `.env.local` (gitignored) and are used server-side. No key input field exists in the UI.
+- **No site passwords, ever.** The app never stores or uses LinkedIn/Naukri credentials and
+  never automates authenticated submissions — only public, read-only job listings and a
+  human-submitted review link.
+- File parsing and all Gemini/Adzuna calls run in Node runtime API routes, never the browser.
 ```

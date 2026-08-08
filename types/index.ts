@@ -93,7 +93,20 @@ export interface SurgicalTailor {
   tailored_resume_data: TailoredResumeData;
 }
 
-export type Platform = "naukri" | "linkedin";
+export type Platform = "naukri" | "linkedin" | "other";
+
+/** A normalized job listing from a job-search API (e.g. Adzuna). */
+export interface JobListing {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  description: string;
+  applyUrl: string;
+  created?: string;
+  salary?: string;
+  source: string;
+}
 
 /** One row in the application audit log. */
 export interface ApplicationLogEntry {
