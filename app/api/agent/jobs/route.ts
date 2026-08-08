@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adzunaConfigured, fetchAllJobs } from "@/lib/jobs";
+import { rateLimit } from "@/lib/http";
 import type { JobListing } from "@/types";
 
 export const runtime = "nodejs";
@@ -21,6 +22,8 @@ export async function POST(
   req: NextRequest
 ): Promise<NextResponse<{ jobs: JobListing[]; errors?: string[] } | { error: string }>> {
   try {
+    const limited = rateLimit(req);
+    if (limited) return limited;
     const { keywords, locations, limit = 20 } = (await req.json()) as JobsBody;
     const what = (keywords ?? "").trim() || "software engineer";
     const locs = locations ?? [];

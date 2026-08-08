@@ -75,7 +75,7 @@ export function recordKeywordOutcome(m: AgentMemory, keywords: string, score: nu
   keywords
     .toLowerCase()
     .split(/\s+/)
-    .filter((t) => t.length > 2)
+    .filter((t) => t.length >= 2)
     .forEach((t) => {
       const cur = next[t] ?? { sum: 0, count: 0 };
       next[t] = { sum: cur.sum + score, count: cur.count + 1 };

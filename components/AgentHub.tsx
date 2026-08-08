@@ -26,6 +26,7 @@ import { AgentOrchestrator } from "@/components/AgentOrchestrator";
 import { PrepPackButton } from "@/components/PrepPackButton";
 import { SkillsGapPanel } from "@/components/SkillsGapPanel";
 import { ResumeSource } from "@/components/ResumeSource";
+import { detectPlatform } from "@/lib/platform";
 import type {
   ApplicationLogEntry,
   ApplyEligibility,
@@ -51,13 +52,6 @@ function searchUrl(platform: Platform, keyword: string, location: string): strin
   }
   // Naukri uses slug-style search paths.
   return `https://www.naukri.com/${slug(keyword)}-jobs-in-${slug(location)}`;
-}
-
-function detectPlatform(url: string): Platform {
-  const u = (url || "").toLowerCase();
-  if (u.includes("linkedin.")) return "linkedin";
-  if (u.includes("naukri.")) return "naukri";
-  return "other";
 }
 
 /** Shared: surgically tailor for a JD, then run the eligibility gate. */
@@ -178,16 +172,12 @@ export function AgentHub({
   return (
     <div className="space-y-6">
       {/* ToS / safety notice */}
-      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-        <p className="flex items-start gap-2">
-          <ShieldCheck size={16} className="mt-0.5 shrink-0" />
-          <span>
-            <strong>Human-in-the-loop by design.</strong> This hub discovers roles, surgically
-            tailors your resume, and gates each job on match score — then hands you a review link to
-            submit yourself. It does <strong>not</strong> auto-submit or automate your LinkedIn/Naukri
-            login, which would violate their terms and risk your account.
-          </span>
-        </p>
+      <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+        <ShieldCheck size={15} className="shrink-0" />
+        <span>
+          <strong>Human-in-the-loop:</strong> the agent preps everything — you review &amp; submit. No
+          auto-login or auto-submit.
+        </span>
       </div>
 
       {error && (

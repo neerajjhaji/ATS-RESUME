@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ai, MODELS, assertGeminiConfigured } from "@/lib/gemini";
+import { MODELS, assertGeminiConfigured, generateJson } from "@/lib/gemini";
+import { rateLimit } from "@/lib/http";
 import { surgicalTailorSchema } from "@/lib/schemas";
 import type { SurgicalTailor, TailorAttempt } from "@/types";
 
@@ -32,16 +33,12 @@ ${jd}
 === ORIGINAL RESUME ===
 ${resume}`;
 
-  const response = await ai.models.generateContent({
+  const data = await generateJson<SurgicalTailor>({
     model: MODELS.PRO_STRATEGY,
     contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: surgicalTailorSchema,
-      temperature: 0.25,
-    },
+    schema: surgicalTailorSchema,
+    temperature: 0.25,
   });
-  const data = JSON.parse(response.text ?? "{}") as SurgicalTailor;
   if (typeof data.ats_match_score === "number") {
     data.ats_match_score = Math.max(0, Math.min(100, Math.round(data.ats_match_score)));
   }
@@ -60,6 +57,8 @@ export async function POST(
   req: NextRequest
 ): Promise<NextResponse<SurgicalTailor | { error: string }>> {
   try {
+    const limited = rateLimit(req);
+    if (limited) return limited;
     assertGeminiConfigured();
     const { originalResumeText, jobDescription, minScore = 75, maxTries = 3 } =
       (await req.json()) as LoopBody;

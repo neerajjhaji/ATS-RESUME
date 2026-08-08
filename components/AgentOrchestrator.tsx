@@ -24,6 +24,7 @@ import {
   topKeywords,
   type AgentMemory,
 } from "@/lib/agentMemory";
+import { detectPlatform } from "@/lib/platform";
 import type {
   AgentPlan,
   ApplicationLogEntry,
@@ -33,13 +34,6 @@ import type {
   Platform,
   SurgicalTailor,
 } from "@/types";
-
-function detectPlatform(url: string): Platform {
-  const u = (url || "").toLowerCase();
-  if (u.includes("linkedin.")) return "linkedin";
-  if (u.includes("naukri.")) return "naukri";
-  return "other";
-}
 
 function slug(s: string) {
   return s.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
@@ -226,7 +220,7 @@ export function AgentOrchestrator({
 
       <p className="mb-3 text-xs text-slate-500">
         One click: the agent plans, fetches jobs, skips ones it has seen, tailors each with a
-        self-critique loop, gates on match score, and ranks what's ready — learning across runs.
+        self-critique loop, gates on match score, and ranks what&apos;s ready — learning across runs.
       </p>
 
       <button

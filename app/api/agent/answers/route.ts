@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ai, MODELS, assertGeminiConfigured } from "@/lib/gemini";
+import { MODELS, assertGeminiConfigured, generateJson } from "@/lib/gemini";
+import { rateLimit } from "@/lib/http";
 import { answerPackSchema } from "@/lib/schemas";
 import type { AnswerPack, MasterProfile } from "@/types";
 
@@ -23,6 +24,8 @@ export async function POST(
   req: NextRequest
 ): Promise<NextResponse<AnswerPack | { error: string }>> {
   try {
+    const limited = rateLimit(req);
+    if (limited) return limited;
     assertGeminiConfigured();
     const { profile, jobDescription, company, title } = (await req.json()) as AnswersBody;
 
@@ -50,17 +53,12 @@ ${title ?? "(role)"} at ${company ?? "(company)"}
 === JOB DESCRIPTION ===
 ${jobDescription}`;
 
-    const response = await ai.models.generateContent({
+    const data = await generateJson<AnswerPack>({
       model: MODELS.FLASH_AUX,
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: answerPackSchema,
-        temperature: 0.5,
-      },
+      schema: answerPackSchema,
+      temperature: 0.5,
     });
-
-    const data = JSON.parse(response.text ?? "{}") as AnswerPack;
     return NextResponse.json(data);
   } catch (err) {
     console.error("[agent/answers] error:", err);

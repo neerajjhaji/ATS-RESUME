@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ai, MODELS, assertGeminiConfigured } from "@/lib/gemini";
+import { MODELS, assertGeminiConfigured, generateJson } from "@/lib/gemini";
+import { rateLimit } from "@/lib/http";
 import { planSchema } from "@/lib/schemas";
 import type { AgentPlan } from "@/types";
 
@@ -26,6 +27,8 @@ export async function POST(
   req: NextRequest
 ): Promise<NextResponse<AgentPlan | { error: string }>> {
   try {
+    const limited = rateLimit(req);
+    if (limited) return limited;
     assertGeminiConfigured();
     const { resumeText, locations, memoryHints } = (await req.json()) as PlanBody;
 
@@ -49,17 +52,12 @@ Rules:
 === RESUME ===
 ${resumeText}`;
 
-    const response = await ai.models.generateContent({
+    const plan = await generateJson<AgentPlan>({
       model: MODELS.PRO_STRATEGY,
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: planSchema,
-        temperature: 0.4,
-      },
+      schema: planSchema,
+      temperature: 0.4,
     });
-
-    const plan = JSON.parse(response.text ?? "{}") as AgentPlan;
     // Clamp to safe bounds.
     plan.locations = plan.locations?.length ? plan.locations : locs;
     plan.match_threshold = Math.max(60, Math.min(90, Math.round(plan.match_threshold || 75)));

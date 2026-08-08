@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ai, MODELS, assertGeminiConfigured } from "@/lib/gemini";
+import { MODELS, assertGeminiConfigured, generateJson } from "@/lib/gemini";
+import { rateLimit } from "@/lib/http";
 import { skillsGapSchema } from "@/lib/schemas";
 import type { SkillGap, SkillsGapPlan } from "@/types";
 
@@ -20,6 +21,8 @@ export async function POST(
   req: NextRequest
 ): Promise<NextResponse<SkillsGapPlan | { error: string }>> {
   try {
+    const limited = rateLimit(req);
+    if (limited) return limited;
     assertGeminiConfigured();
     const { gaps } = (await req.json()) as GapBody;
 
@@ -41,17 +44,12 @@ ${list}
 
 Produce a prioritized, realistic upskilling plan. Prioritize by impact (how many roles it unlocks) × learnability. For each skill give a priority, realistic weeks-to-job-ready, and a concrete plan (what to build/learn). Be practical, not generic.`;
 
-    const response = await ai.models.generateContent({
+    const plan = await generateJson<SkillsGapPlan>({
       model: MODELS.FLASH_AUX,
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: skillsGapSchema,
-        temperature: 0.5,
-      },
+      schema: skillsGapSchema,
+      temperature: 0.5,
     });
-
-    const plan = JSON.parse(response.text ?? "{}") as SkillsGapPlan;
     return NextResponse.json(plan);
   } catch (err) {
     console.error("[agent/skills-gap] error:", err);

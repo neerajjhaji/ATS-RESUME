@@ -1,4 +1,5 @@
 import type { JobListing } from "@/types";
+import { fetchWithTimeout, withRetry } from "@/lib/retry";
 
 /**
  * Server-only Adzuna job-search client. Adzuna authenticates with an app id +
@@ -52,7 +53,7 @@ export async function fetchAdzunaJobs(opts: {
     });
     const url = `https://api.adzuna.com/v1/api/jobs/${country}/search/1?${params.toString()}`;
 
-    const res = await fetch(url);
+    const res = await withRetry(() => fetchWithTimeout(url));
     if (!res.ok) {
       const body = await res.text().catch(() => "");
       throw new Error(`Adzuna request failed (${res.status}). ${body.slice(0, 140)}`);
@@ -76,15 +77,15 @@ export async function fetchAdzunaJobs(opts: {
     }
   }
 
-  return dedupe(all);
+  return dedupeJobs(all);
 }
 
-function stripHtml(s: string): string {
+export function stripHtml(s: string): string {
   return (s || "").replace(/<[^>]+>/g, " ").replace(/&[a-z]+;/gi, " ").replace(/\s+/g, " ").trim();
 }
 
-function matchesKeywords(text: string, what: string): boolean {
-  const terms = what.toLowerCase().split(/\s+/).filter((t) => t.length > 2);
+export function matchesKeywords(text: string, what: string): boolean {
+  const terms = what.toLowerCase().split(/\s+/).filter((t) => t.length >= 2);
   if (!terms.length) return true;
   const hay = text.toLowerCase();
   return terms.some((t) => hay.includes(t));
@@ -92,9 +93,11 @@ function matchesKeywords(text: string, what: string): boolean {
 
 /** RemoteOK — free, no key, all-remote roles. */
 export async function fetchRemoteOk(what: string, limit = 12): Promise<JobListing[]> {
-  const res = await fetch("https://remoteok.com/api", {
-    headers: { "User-Agent": "resume-tailor-agent", Accept: "application/json" },
-  });
+  const res = await withRetry(() =>
+    fetchWithTimeout("https://remoteok.com/api", {
+      headers: { "User-Agent": "resume-tailor-agent", Accept: "application/json" },
+    })
+  );
   if (!res.ok) throw new Error(`RemoteOK ${res.status}`);
   const raw = (await res.json()) as Record<string, unknown>[];
   // First element is a legal/notice object, not a job.
@@ -118,9 +121,11 @@ export async function fetchRemoteOk(what: string, limit = 12): Promise<JobListin
 
 /** Arbeitnow — free, no key, includes remote + on-site roles. */
 export async function fetchArbeitnow(what: string, limit = 12): Promise<JobListing[]> {
-  const res = await fetch("https://www.arbeitnow.com/api/job-board-api", {
-    headers: { Accept: "application/json" },
-  });
+  const res = await withRetry(() =>
+    fetchWithTimeout("https://www.arbeitnow.com/api/job-board-api", {
+      headers: { Accept: "application/json" },
+    })
+  );
   if (!res.ok) throw new Error(`Arbeitnow ${res.status}`);
   const data = (await res.json()) as { data?: Record<string, unknown>[] };
   const mapped: JobListing[] = (data.data ?? []).map((r) => ({
@@ -138,7 +143,7 @@ export async function fetchArbeitnow(what: string, limit = 12): Promise<JobListi
     .slice(0, limit);
 }
 
-function dedupe(list: JobListing[]): JobListing[] {
+export function dedupeJobs(list: JobListing[]): JobListing[] {
   const seen = new Set<string>();
   return list.filter((j) => {
     const k = (j.applyUrl || j.id).toLowerCase();
@@ -186,5 +191,5 @@ export async function fetchAllJobs(opts: {
   }
 
   await Promise.all(tasks);
-  return { jobs: dedupe(collected), errors };
+  return { jobs: dedupeJobs(collected), errors };
 }

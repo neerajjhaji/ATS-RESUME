@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ai, MODELS, assertGeminiConfigured } from "@/lib/gemini";
+import { MODELS, assertGeminiConfigured, generateJson } from "@/lib/gemini";
+import { rateLimit } from "@/lib/http";
 import { jobDiscoverySchema } from "@/lib/schemas";
 import type { JobDiscovery } from "@/types";
 
@@ -23,6 +24,8 @@ export async function POST(
   req: NextRequest
 ): Promise<NextResponse<JobDiscovery | { error: string }>> {
   try {
+    const limited = rateLimit(req);
+    if (limited) return limited;
     assertGeminiConfigured();
     const { resumeText, locations } = (await req.json()) as DiscoverBody;
 
@@ -42,17 +45,12 @@ Rules:
 === RESUME ===
 ${resumeText}`;
 
-    const response = await ai.models.generateContent({
+    const data = await generateJson<JobDiscovery>({
       model: MODELS.FLASH_AUX,
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: jobDiscoverySchema,
-        temperature: 0.4,
-      },
+      schema: jobDiscoverySchema,
+      temperature: 0.4,
     });
-
-    const data = JSON.parse(response.text ?? "{}") as JobDiscovery;
     // Guarantee the requested locations survive even if the model drops them.
     if (!data.location_filters?.length) data.location_filters = locs;
 

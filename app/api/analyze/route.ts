@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ai, MODELS, assertGeminiConfigured } from "@/lib/gemini";
+import { MODELS, assertGeminiConfigured, generateJson } from "@/lib/gemini";
+import { rateLimit } from "@/lib/http";
 import { atsAuditSchema } from "@/lib/schemas";
 import type { AtsAudit } from "@/types";
 
@@ -20,6 +21,8 @@ interface AnalyzeBody {
  */
 export async function POST(req: NextRequest): Promise<NextResponse<AtsAudit | { error: string }>> {
   try {
+    const limited = rateLimit(req);
+    if (limited) return limited;
     assertGeminiConfigured();
 
     const { resumeText, jobDescription, jobTitle } = (await req.json()) as AnalyzeBody;
@@ -52,17 +55,12 @@ ${jobDescription}
 === RESUME ===
 ${resumeText}`;
 
-    const response = await ai.models.generateContent({
+    const audit = await generateJson<AtsAudit>({
       model: MODELS.PRO_STRATEGY,
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: atsAuditSchema,
-        temperature: 0.3,
-      },
+      schema: atsAuditSchema,
+      temperature: 0.3,
     });
-
-    const audit = JSON.parse(response.text ?? "{}") as AtsAudit;
 
     // Clamp defensively in case the model returns out-of-range values.
     if (typeof audit.match_score === "number") {

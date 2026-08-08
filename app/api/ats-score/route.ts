@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ai, MODELS, assertGeminiConfigured } from "@/lib/gemini";
+import { MODELS, assertGeminiConfigured, generateJson } from "@/lib/gemini";
+import { rateLimit } from "@/lib/http";
 import { atsReadinessSchema } from "@/lib/schemas";
 import type { AtsReadiness } from "@/types";
 
@@ -22,6 +23,8 @@ export async function POST(
   req: NextRequest
 ): Promise<NextResponse<AtsReadiness | { error: string }>> {
   try {
+    const limited = rateLimit(req);
+    if (limited) return limited;
     assertGeminiConfigured();
 
     const { resumeText } = (await req.json()) as ScoreBody;
@@ -45,17 +48,12 @@ Be objective and specific in each note. Provide 3-6 general quick wins.
 === RESUME ===
 ${resumeText}`;
 
-    const response = await ai.models.generateContent({
+    const readiness = await generateJson<AtsReadiness>({
       model: MODELS.PRO_STRATEGY,
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: atsReadinessSchema,
-        temperature: 0.3,
-      },
+      schema: atsReadinessSchema,
+      temperature: 0.3,
     });
-
-    const readiness = JSON.parse(response.text ?? "{}") as AtsReadiness;
 
     if (typeof readiness.ats_score === "number") {
       readiness.ats_score = Math.max(0, Math.min(100, Math.round(readiness.ats_score)));

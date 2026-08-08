@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ai, MODELS, assertGeminiConfigured } from "@/lib/gemini";
+import { MODELS, assertGeminiConfigured, generateJson } from "@/lib/gemini";
+import { rateLimit } from "@/lib/http";
 import { prepPackSchema } from "@/lib/schemas";
 import type { PrepPack } from "@/types";
 
@@ -23,6 +24,8 @@ export async function POST(
   req: NextRequest
 ): Promise<NextResponse<PrepPack | { error: string }>> {
   try {
+    const limited = rateLimit(req);
+    if (limited) return limited;
     assertGeminiConfigured();
     const { resumeText, jobDescription, company, title } = (await req.json()) as PrepBody;
 
@@ -46,17 +49,12 @@ ${jobDescription}
 === RESUME ===
 ${resumeText ?? "(not provided — keep STAR answers general but honest)"}`;
 
-    const response = await ai.models.generateContent({
+    const pack = await generateJson<PrepPack>({
       model: MODELS.FLASH_AUX,
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: prepPackSchema,
-        temperature: 0.5,
-      },
+      schema: prepPackSchema,
+      temperature: 0.5,
     });
-
-    const pack = JSON.parse(response.text ?? "{}") as PrepPack;
     return NextResponse.json(pack);
   } catch (err) {
     console.error("[agent/prep] error:", err);

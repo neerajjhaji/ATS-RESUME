@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ai, MODELS, assertGeminiConfigured } from "@/lib/gemini";
+import { MODELS, assertGeminiConfigured, generateJson } from "@/lib/gemini";
 import { surgicalTailorSchema } from "@/lib/schemas";
 import { fetchAllJobs } from "@/lib/jobs";
 import type { JobListing, SurgicalTailor } from "@/types";
@@ -107,12 +107,12 @@ async function tailorLoop(resume: string, jd: string, minScore: number): Promise
     const prompt = `Surgically tailor the resume to the JD. Preserve structure, tone, and date formats; inject only genuinely-supported skills; never fabricate. Flag unmeetable hard requirements in dealbreaker_flags.${
       feedback ? `\nREVISION FEEDBACK:\n${feedback}` : ""
     }\n\n=== JOB DESCRIPTION ===\n${jd}\n\n=== RESUME ===\n${resume}`;
-    const response = await ai.models.generateContent({
+    const data = await generateJson<SurgicalTailor>({
       model: MODELS.PRO_STRATEGY,
       contents: prompt,
-      config: { responseMimeType: "application/json", responseSchema: surgicalTailorSchema, temperature: 0.25 },
+      schema: surgicalTailorSchema,
+      temperature: 0.25,
     });
-    const data = JSON.parse(response.text ?? "{}") as SurgicalTailor;
     data.ats_match_score = Math.max(0, Math.min(100, Math.round(data.ats_match_score || 0)));
     data.dealbreaker_flags = data.dealbreaker_flags ?? [];
     if (!best || data.ats_match_score > best.ats_match_score) best = data;

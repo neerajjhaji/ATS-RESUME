@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ai, MODELS, assertGeminiConfigured } from "@/lib/gemini";
+import { MODELS, assertGeminiConfigured, generateJson } from "@/lib/gemini";
+import { rateLimit } from "@/lib/http";
 import { coverLetterSchema } from "@/lib/schemas";
 import type { AtsAudit, CoverLetterResponse } from "@/types";
 
@@ -23,6 +24,8 @@ export async function POST(
   req: NextRequest
 ): Promise<NextResponse<CoverLetterResponse | { error: string }>> {
   try {
+    const limited = rateLimit(req);
+    if (limited) return limited;
     assertGeminiConfigured();
 
     const { resumeText, jobDescription, jobTitle, analysis } =
@@ -61,17 +64,12 @@ ${jobDescription}
 === RESUME ===
 ${resumeText}`;
 
-    const response = await ai.models.generateContent({
+    const parsed = await generateJson<CoverLetterResponse>({
       model: MODELS.FLASH_AUX,
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: coverLetterSchema,
-        temperature: 0.7,
-      },
+      schema: coverLetterSchema,
+      temperature: 0.7,
     });
-
-    const parsed = JSON.parse(response.text ?? "{}") as CoverLetterResponse;
     return NextResponse.json({ cover_letter: parsed.cover_letter ?? "" });
   } catch (err) {
     console.error("[cover-letter] error:", err);

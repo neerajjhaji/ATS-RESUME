@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { withRetry } from "@/lib/retry";
 
 /**
  * Central Gemini SDK client + model-routing table.
@@ -55,3 +56,35 @@ export const MODELS = {
 } as const;
 
 export type ModelId = (typeof MODELS)[keyof typeof MODELS];
+
+/**
+ * Structured JSON generation with resilience: retries transient failures
+ * (429/5xx/network) with backoff, then safely parses the model's JSON. Every
+ * route uses this so behavior is uniform and robust.
+ */
+export async function generateJson<T>(args: {
+  model: string;
+  contents: string;
+  schema: unknown;
+  temperature?: number;
+}): Promise<T> {
+  const { model, contents, schema, temperature = 0.3 } = args;
+  const response = await withRetry(() =>
+    ai.models.generateContent({
+      model,
+      contents,
+      config: {
+        responseMimeType: "application/json",
+        // Cast: the SDK's Schema type is structural; our schemas match it.
+        responseSchema: schema as never,
+        temperature,
+      },
+    })
+  );
+  const text = response.text ?? "{}";
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error("The model returned invalid JSON. Please try again.");
+  }
+}
