@@ -86,11 +86,28 @@ export interface TailoredResumeData {
   education: TailoredEducation[];
 }
 
+export interface TailorAttempt {
+  try: number;
+  score: number;
+}
+
 export interface SurgicalTailor {
   ats_match_score: number;
   dealbreaker_flags: string[];
   key_updates_made: string[];
   tailored_resume_data: TailoredResumeData;
+  /** Present when produced by the self-critique loop: score per attempt. */
+  attempts?: TailorAttempt[];
+}
+
+/** The agent's execution plan, produced by the LLM planner. */
+export interface AgentPlan {
+  keywords: string;
+  target_titles: string[];
+  locations: string[];
+  match_threshold: number;
+  max_tailor: number;
+  rationale: string;
 }
 
 export type Platform = "naukri" | "linkedin" | "other";

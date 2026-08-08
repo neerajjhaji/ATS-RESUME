@@ -140,6 +140,11 @@ Surgical tailor ──► /api/agent/tailor-diff   (structure-preserving rewrite
 Eligibility gate──► /api/agent/prepare-apply (score ≥ 75 & no dealbreakers → review link)
 Answer pack     ──► /api/agent/answers       (screening answers from profile + JD)
 Daily digest    ──► /api/agent/digest        (emails fresh matches via Resend)
+
+Autonomous agent:
+Planner         ──► /api/agent/plan          (LLM decides keywords/titles/threshold/how many)
+Self-critique   ──► /api/agent/tailor-loop   (re-tailors until match ≥ threshold; never fabricates)
+Orchestrator    ──► client loop: plan → jobs → dedupe(memory) → tailor-loop → gate → rank
 ```
 
 ### Structured output
@@ -173,6 +178,12 @@ Phase 2 enforces this JSON shape via `config.responseSchema` (see
 A second tab that turns the tailor into a job-discovery + application‑prep agent for
 **Navi Mumbai, Mumbai, and Remote** roles across **Naukri** and **LinkedIn**.
 
+0. **Autonomous run** — one **"Run the agent"** button that plans the run (LLM decides
+   keywords, titles, match threshold, and how many to tailor), fetches multi-source jobs,
+   **dedupes against memory** (jobs it has already seen), tailors each with a **self-critique
+   loop** (re-tailors until the match clears the threshold — never fabricating), gates on score,
+   and **ranks** the ready queue. It **learns across runs** (which keywords match best) and
+   remembers what it has seen. Still ends at a review link — you submit.
 1. **Discover** — from your resume, generate target titles + search keywords and ready-made
    Naukri/LinkedIn search links per location.
 2. **Master profile** — save your contact, notice period, current/expected CTC, work auth, and
@@ -234,14 +245,17 @@ resume-tailor/
 │  │     ├─ tailor-diff/route.ts    # surgical tailor + score + dealbreakers
 │  │     ├─ prepare-apply/route.ts  # eligibility gate (human submits)
 │  │     ├─ answers/route.ts        # screening answer pack
-│  │     └─ digest/route.ts         # daily digest email (Resend)
+│  │     ├─ digest/route.ts         # daily digest email (Resend)
+│  │     ├─ plan/route.ts           # LLM planner (decides the run)
+│  │     └─ tailor-loop/route.ts    # self-critique tailoring loop
 │  ├─ globals.css · layout.tsx
 │  └─ page.tsx                  # tabbed orchestrator (Tailor + Agent Hub)
 ├─ components/                  # InputPanel, ScoreGauge, KeywordList, RecommendationsFeed,
 │                               # ResumeEditor, CoverLetterCard, StandaloneScoreCard,
-│                               # TemplateGallery, AgentHub, ProfilePanel, AnswerPackButton,
-│                               # DigestPanel, Brand
-├─ lib/                         # gemini, schemas, fileParser, export, templates, jobs, profile
+│                               # TemplateGallery, AgentHub, AgentOrchestrator, ProfilePanel,
+│                               # AnswerPackButton, DigestPanel, Brand
+├─ lib/                         # gemini, schemas, fileParser, export, templates, jobs,
+│                               # profile, agentMemory
 ├─ types/index.ts
 ├─ .github/workflows/daily-digest.yml
 └─ .env.example

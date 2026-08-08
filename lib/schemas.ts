@@ -237,6 +237,41 @@ export const surgicalTailorSchema = {
   required: ["ats_match_score", "dealbreaker_flags", "key_updates_made", "tailored_resume_data"],
 };
 
+/** The agent planner's structured plan for a run. */
+export const planSchema = {
+  type: Type.OBJECT,
+  properties: {
+    keywords: {
+      type: Type.STRING,
+      description:
+        "A single space-separated search string of the candidate's strongest role terms + tools, for querying job APIs.",
+    },
+    target_titles: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "3-6 realistic target job titles the candidate is competitive for.",
+    },
+    locations: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "The locations to search — use exactly the user-provided locations.",
+    },
+    match_threshold: {
+      type: Type.INTEGER,
+      description: "Minimum ATS match score (60-90) to consider a job worth applying to. Default 75.",
+    },
+    max_tailor: {
+      type: Type.INTEGER,
+      description: "How many top jobs to tailor this run (1-8), balancing coverage vs cost. Default 5.",
+    },
+    rationale: {
+      type: Type.STRING,
+      description: "1-2 sentences explaining the strategy for this run.",
+    },
+  },
+  required: ["keywords", "target_titles", "locations", "match_threshold", "max_tailor", "rationale"],
+};
+
 /** Auto-drafted answers to recurring screening questions, grounded in the profile + JD. */
 export const answerPackSchema = {
   type: Type.OBJECT,

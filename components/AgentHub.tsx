@@ -22,6 +22,7 @@ import { DEFAULT_PROFILE, loadProfile, saveProfile } from "@/lib/profile";
 import { ProfilePanel } from "@/components/ProfilePanel";
 import { AnswerPackButton } from "@/components/AnswerPackButton";
 import { DigestPanel } from "@/components/DigestPanel";
+import { AgentOrchestrator } from "@/components/AgentOrchestrator";
 import type {
   ApplicationLogEntry,
   ApplyEligibility,
@@ -269,6 +270,14 @@ export function AgentHub({ resumeText }: { resumeText: string }) {
           </div>
         )}
       </section>
+
+      {/* Autonomous orchestrator */}
+      <AgentOrchestrator
+        resumeText={resumeText}
+        locations={locations}
+        profile={profile}
+        onLogged={addLogEntry}
+      />
 
       {/* Master profile */}
       <ProfilePanel profile={profile} onChange={updateProfile} />
