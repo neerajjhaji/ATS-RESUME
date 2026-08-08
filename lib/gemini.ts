@@ -42,11 +42,15 @@ export function assertGeminiConfigured(): void {
  * See https://ai.google.dev/gemini-api/docs/models for the current lineup.
  */
 export const MODELS = {
-  /** Fast text parsing / extraction / real-time streaming. */
+  // Requested (agent spec) IDs — currently return 404 NOT_FOUND on this key, so
+  // they are left commented. Flip to these once your key actually lists them
+  // (run the curl above): "gemini-3.6-flash" / "gemini-3.1-pro-preview" / "gemini-3.5-flash".
+
+  /** Ultra-fast parsing, extraction, location normalization. */
   FLASH_FAST: "gemini-2.0-flash",
-  /** Deep strategic ATS analysis, gap detection, line-by-line rewrites. */
+  /** Frontier reasoning: deep ATS audit, dealbreaker detection, surgical rewrites. */
   PRO_STRATEGY: "gemini-2.5-pro",
-  /** Auxiliary quick generation: cover letters, summary rewrites, interview prep. */
+  /** High-speed auxiliary: cover letters, search-query building. */
   FLASH_AUX: "gemini-2.5-flash",
 } as const;
 

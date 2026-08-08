@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FileSearch, Gauge, ListChecks } from "lucide-react";
+import { Bot, FileSearch, Gauge, ListChecks, Wand2 } from "lucide-react";
 import { BrandFooter, BrandHeader } from "@/components/Brand";
+import { AgentHub } from "@/components/AgentHub";
 import { InputPanel } from "@/components/InputPanel";
 import { ScoreGauge } from "@/components/ScoreGauge";
 import { KeywordList } from "@/components/KeywordList";
@@ -57,6 +58,9 @@ export default function Home() {
 
   // Selected export template
   const [templateId, setTemplateId] = useState<TemplateId>("classic");
+
+  // Active top-level tab
+  const [tab, setTab] = useState<"tailor" | "agent">("tailor");
 
   const analyzeBusy = phase === "parsing" || phase === "analyzing";
   const quickScoreBusy = phase === "scoring";
@@ -217,12 +221,40 @@ export default function Home() {
         </span>
       </header>
 
+      {/* Tabs */}
+      <div className="mb-6 inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-card">
+        <button
+          onClick={() => setTab("tailor")}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+            tab === "tailor" ? "bg-brand-600 text-white" : "text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <Wand2 size={15} /> Resume Tailor
+        </button>
+        <button
+          onClick={() => setTab("agent")}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+            tab === "agent" ? "bg-brand-600 text-white" : "text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <Bot size={15} /> Agent Hub
+        </button>
+      </div>
+
       {error && (
         <div className="animate-in mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {error}
         </div>
       )}
 
+      {tab === "agent" && (
+        <div className="animate-in">
+          <AgentHub resumeText={resumeText} />
+        </div>
+      )}
+
+      {tab === "tailor" && (
+      <>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
         {/* LEFT: inputs + audit dashboard */}
         <div className="space-y-6">
@@ -336,6 +368,8 @@ export default function Home() {
             onSelect={setTemplateId}
           />
         </div>
+      )}
+      </>
       )}
     </main>
     <BrandFooter />

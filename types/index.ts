@@ -55,6 +55,69 @@ export interface ApiError {
   error: string;
 }
 
+// ---------------------------------------------------------------------------
+// Agent system types
+// ---------------------------------------------------------------------------
+
+export interface JobDiscovery {
+  search_keywords: string[];
+  location_filters: string[];
+  target_job_titles: string[];
+}
+
+export interface TailoredExperience {
+  company: string;
+  title: string;
+  dates: string;
+  bullets: string[];
+}
+
+export interface TailoredEducation {
+  institution: string;
+  degree: string;
+  dates: string;
+}
+
+export interface TailoredResumeData {
+  header: string;
+  summary: string;
+  skills: string[];
+  experience: TailoredExperience[];
+  education: TailoredEducation[];
+}
+
+export interface SurgicalTailor {
+  ats_match_score: number;
+  dealbreaker_flags: string[];
+  key_updates_made: string[];
+  tailored_resume_data: TailoredResumeData;
+}
+
+export type Platform = "naukri" | "linkedin";
+
+/** One row in the application audit log. */
+export interface ApplicationLogEntry {
+  id: string;
+  company: string;
+  jobTitle: string;
+  location: string;
+  platform: Platform;
+  atsMatch: number;
+  status: "Applied" | "Skipped" | "Ready";
+  reason?: string;
+  applyUrl?: string;
+}
+
+/** Eligibility verdict from the Apply Assist gate (human submits, not the app). */
+export interface ApplyEligibility {
+  eligible: boolean;
+  reason: string;
+  ats_match_score: number;
+  dealbreaker_flags: string[];
+  applyUrl: string;
+  platform: Platform;
+}
+
 /** Loading phases surfaced in the UI while the pipeline runs. */
 export type ProcessingPhase =
   | "idle"

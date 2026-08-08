@@ -136,3 +136,103 @@ export const coverLetterSchema = {
   },
   required: ["cover_letter"],
 };
+
+// ---------------------------------------------------------------------------
+// Agent system schemas
+// ---------------------------------------------------------------------------
+
+/** Job-discovery output: search terms + titles optimized for Naukri/LinkedIn. */
+export const jobDiscoverySchema = {
+  type: Type.OBJECT,
+  properties: {
+    search_keywords: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description:
+        "8-15 high-signal search keywords/phrases (skills, tools, role terms) to query on Naukri and LinkedIn, ranked by relevance to the resume.",
+    },
+    location_filters: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description:
+        'Location filters to apply. Use exactly the user-provided locations, e.g. "Navi Mumbai", "Mumbai", "Remote".',
+    },
+    target_job_titles: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description:
+        "5-10 realistic target job titles the candidate is competitive for, based on their resume seniority and skills.",
+    },
+  },
+  required: ["search_keywords", "location_filters", "target_job_titles"],
+};
+
+/**
+ * Surgical tailor output. tailored_resume_data preserves the ORIGINAL resume
+ * structure exactly — section titles, ordering, date formats, tone — only
+ * injecting genuinely-supported JD keywords into existing bullets. Never invents
+ * experience.
+ */
+export const surgicalTailorSchema = {
+  type: Type.OBJECT,
+  properties: {
+    ats_match_score: {
+      type: Type.INTEGER,
+      description: "Post-tailoring ATS match score for the target job, 0-100.",
+    },
+    dealbreaker_flags: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description:
+        "Hard disqualifiers the resume genuinely cannot satisfy (e.g. 'Requires active security clearance', 'Requires 10+ yrs; candidate has 3'). Empty if none.",
+    },
+    key_updates_made: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "Concise list of the specific surgical edits applied.",
+    },
+    tailored_resume_data: {
+      type: Type.OBJECT,
+      description: "The full tailored resume, preserving the original structure exactly.",
+      properties: {
+        header: {
+          type: Type.STRING,
+          description: "Name + contact block, unchanged from the original.",
+        },
+        summary: { type: Type.STRING, description: "Tailored professional summary." },
+        skills: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
+          description: "Skills list, with genuinely-supported JD skills surfaced.",
+        },
+        experience: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              company: { type: Type.STRING },
+              title: { type: Type.STRING },
+              dates: { type: Type.STRING, description: "Preserve the ORIGINAL date format verbatim." },
+              bullets: { type: Type.ARRAY, items: { type: Type.STRING } },
+            },
+            required: ["company", "title", "dates", "bullets"],
+          },
+        },
+        education: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              institution: { type: Type.STRING },
+              degree: { type: Type.STRING },
+              dates: { type: Type.STRING },
+            },
+            required: ["institution", "degree", "dates"],
+          },
+        },
+      },
+      required: ["header", "summary", "skills", "experience", "education"],
+    },
+  },
+  required: ["ats_match_score", "dealbreaker_flags", "key_updates_made", "tailored_resume_data"],
+};
