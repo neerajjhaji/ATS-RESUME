@@ -181,6 +181,10 @@ Phase 2 enforces this JSON shape via `config.responseSchema` (see
 A second tab that turns the tailor into a job-discovery + application‑prep agent for
 **Navi Mumbai, Mumbai, and Remote** roles across **Naukri** and **LinkedIn**.
 
+> **First, add your résumé.** The hub has a **"Your résumé"** card at the top — upload a
+> PDF/DOCX or paste text right there (or use the Resume Tailor tab). The résumé is shared
+> across both tabs and unlocks the agent's discover/tailor actions.
+
 0. **Autonomous run** — one **"Run the agent"** button that plans the run (LLM decides
    keywords, titles, match threshold, and how many to tailor), fetches multi-source jobs,
    **dedupes against memory** (jobs it has already seen), tailors each with a **self-critique

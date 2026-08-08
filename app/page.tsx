@@ -249,7 +249,11 @@ export default function Home() {
 
       {tab === "agent" && (
         <div className="animate-in">
-          <AgentHub resumeText={resumeText} />
+          <AgentHub
+            resumeText={resumeText}
+            setResumeText={setResumeText}
+            onGoToTailor={() => setTab("tailor")}
+          />
         </div>
       )}
 

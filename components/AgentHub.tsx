@@ -25,6 +25,7 @@ import { DigestPanel } from "@/components/DigestPanel";
 import { AgentOrchestrator } from "@/components/AgentOrchestrator";
 import { PrepPackButton } from "@/components/PrepPackButton";
 import { SkillsGapPanel } from "@/components/SkillsGapPanel";
+import { ResumeSource } from "@/components/ResumeSource";
 import type {
   ApplicationLogEntry,
   ApplyEligibility,
@@ -90,7 +91,15 @@ async function runTailorAndGate(
   return { tailor: tData as SurgicalTailor, eligibility: pData as ApplyEligibility };
 }
 
-export function AgentHub({ resumeText }: { resumeText: string }) {
+export function AgentHub({
+  resumeText,
+  setResumeText,
+  onGoToTailor,
+}: {
+  resumeText: string;
+  setResumeText: (v: string) => void;
+  onGoToTailor?: () => void;
+}) {
   const hasResume = resumeText.trim().length > 20;
 
   const [locations, setLocations] = useState<string[]>([...ALL_LOCATIONS]);
@@ -187,12 +196,12 @@ export function AgentHub({ resumeText }: { resumeText: string }) {
         </div>
       )}
 
-      {!hasResume && (
-        <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500 shadow-card">
-          Add your resume in the <strong>Tailor</strong> tab first — the agent uses it to discover and
-          tailor.
-        </div>
-      )}
+      {/* Résumé source — add/update without leaving the hub */}
+      <ResumeSource
+        resumeText={resumeText}
+        setResumeText={setResumeText}
+        onGoToTailor={onGoToTailor}
+      />
 
       {/* 1 · Discover */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
