@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { ScoreGauge } from "@/components/ScoreGauge";
+import { LocationSelect } from "@/components/LocationSelect";
 import type { AgentEvent, AgentPlan, AgentResult, JobMatch } from "@/types";
 
 type Phase = "idle" | "planning" | "approve" | "running" | "done" | "error";
@@ -44,12 +45,14 @@ const SUGGESTIONS = [
 export function CareerAgent({
   resumeText,
   locations,
+  setLocations,
   onNeedResume,
   onTailorToJob,
   onSendToBuilder,
 }: {
   resumeText: string;
   locations: string[];
+  setLocations: (v: string[]) => void;
   onNeedResume: () => void;
   onTailorToJob: (job: JobMatch) => void;
   onSendToBuilder: (text: string) => void;
@@ -232,6 +235,10 @@ export function CareerAgent({
               {phase === "planning" ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
               {phase === "planning" ? "Planning…" : "Run Agent"}
             </button>
+          </div>
+
+          <div className="mt-3">
+            <LocationSelect value={locations} onChange={setLocations} />
           </div>
 
           {!hasResume && (

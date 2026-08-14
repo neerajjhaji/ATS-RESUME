@@ -1,19 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Briefcase,
-  CheckCircle2,
-  ExternalLink,
-  Loader2,
-  MapPin,
-  Radar,
-  Sparkles,
-} from "lucide-react";
+import { Briefcase, CheckCircle2, ExternalLink, Loader2, Radar, Sparkles } from "lucide-react";
 import { ResumeSource } from "@/components/ResumeSource";
+import { LocationSelect } from "@/components/LocationSelect";
 import type { JobMatch, JobRecommendations } from "@/types";
-
-const ALL_LOCATIONS = ["Navi Mumbai", "Mumbai", "Remote"];
 
 /**
  * Career Tool — profile-matched job search.
@@ -26,28 +17,25 @@ const ALL_LOCATIONS = ["Navi Mumbai", "Mumbai", "Remote"];
 export function CareerTool({
   resumeText,
   setResumeText,
+  locations,
+  setLocations,
   onTailorToJob,
   embedded = false,
 }: {
   resumeText: string;
   setResumeText: (v: string) => void;
+  locations: string[];
+  setLocations: (v: string[]) => void;
   onTailorToJob: (job: JobMatch) => void;
   /** When embedded in the Career Intelligence dashboard, hide the résumé entry + heading. */
   embedded?: boolean;
 }) {
   const hasResume = resumeText.trim().length > 20;
 
-  const [locations, setLocations] = useState<string[]>([...ALL_LOCATIONS]);
   const [loading, setLoading] = useState(false);
   const [matches, setMatches] = useState<JobMatch[] | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
-
-  function toggleLocation(loc: string) {
-    setLocations((prev) =>
-      prev.includes(loc) ? prev.filter((l) => l !== loc) : [...prev, loc]
-    );
-  }
 
   async function findMatches() {
     setErr(null);
@@ -90,27 +78,8 @@ export function CareerTool({
 
       {/* Locations + action */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-          <MapPin size={12} className="mr-1 inline" /> Target locations
-        </p>
-        <div className="mb-4 flex flex-wrap gap-2">
-          {ALL_LOCATIONS.map((loc) => {
-            const on = locations.includes(loc);
-            return (
-              <button
-                key={loc}
-                onClick={() => toggleLocation(loc)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition ${
-                  on
-                    ? "border-brand-500 bg-brand-50 text-brand-700"
-                    : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
-                }`}
-              >
-                <span className={`h-2 w-2 rounded-full ${on ? "bg-brand-500" : "bg-slate-300"}`} />
-                {loc}
-              </button>
-            );
-          })}
+        <div className="mb-4">
+          <LocationSelect value={locations} onChange={setLocations} />
         </div>
 
         <button

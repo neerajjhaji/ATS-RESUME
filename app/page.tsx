@@ -13,12 +13,11 @@ import { RecommendationsFeed } from "@/components/RecommendationsFeed";
 import { ResumeEditor } from "@/components/ResumeEditor";
 import { CoverLetterCard } from "@/components/CoverLetterCard";
 import { TemplateGallery } from "@/components/TemplateGallery";
+import { DEFAULT_LOCATIONS } from "@/lib/locations";
 import type { TemplateId } from "@/lib/templates";
 import type { ActionableChange, AtsAudit, JobMatch, ParseResponse, ProcessingPhase } from "@/types";
 
 type Module = "builder" | "checker" | "career";
-
-const AGENT_LOCATIONS = ["Navi Mumbai", "Mumbai", "Remote"];
 
 const PHASE_LABEL: Record<ProcessingPhase, string> = {
   idle: "Analyze & Tailor",
@@ -57,6 +56,9 @@ export default function Home() {
 
   // Active module — the flow starts at the ATS Checker (upload → parse).
   const [module, setModule] = useState<Module>("checker");
+
+  // Target locations — shared by the agent and Career Intelligence.
+  const [locations, setLocations] = useState<string[]>(DEFAULT_LOCATIONS);
 
   const isBusy = phase === "parsing" || phase === "analyzing";
   const dirty = editableResume !== originalResume;
@@ -215,7 +217,8 @@ export default function Home() {
       {/* Persistent AI Career Agent — one copilot above all three workspaces. */}
       <CareerAgent
         resumeText={resumeText}
-        locations={AGENT_LOCATIONS}
+        locations={locations}
+        setLocations={setLocations}
         onNeedResume={() => setModule("checker")}
         onTailorToJob={tailorToJob}
         onSendToBuilder={sendToBuilder}
@@ -256,6 +259,8 @@ export default function Home() {
           <CareerDashboard
             resumeText={resumeText}
             setResumeText={setResumeText}
+            locations={locations}
+            setLocations={setLocations}
             onTailorToJob={tailorToJob}
           />
         </div>

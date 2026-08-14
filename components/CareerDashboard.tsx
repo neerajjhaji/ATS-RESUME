@@ -16,10 +16,14 @@ import type { CareerOverview, JobMatch, SalaryInsight } from "@/types";
 export function CareerDashboard({
   resumeText,
   setResumeText,
+  locations,
+  setLocations,
   onTailorToJob,
 }: {
   resumeText: string;
   setResumeText: (v: string) => void;
+  locations: string[];
+  setLocations: (v: string[]) => void;
   onTailorToJob: (job: JobMatch) => void;
 }) {
   const hasResume = resumeText.trim().length > 20;
@@ -160,6 +164,8 @@ export function CareerDashboard({
         <CareerTool
           resumeText={resumeText}
           setResumeText={setResumeText}
+          locations={locations}
+          setLocations={setLocations}
           onTailorToJob={onTailorToJob}
           embedded
         />
