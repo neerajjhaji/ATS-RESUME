@@ -73,7 +73,7 @@ export function CareerTool({
   return (
     <div className="mx-auto max-w-3xl space-y-5">
       <div>
-        <h2 className="text-lg font-bold text-slate-900">Career Tool · Job matches</h2>
+        <h2 className="text-lg font-bold text-slate-900">Career Intelligence · Job matches</h2>
         <p className="text-sm text-slate-500">
           Real roles ranked against your résumé — with match score, matching &amp; missing skills,
           location, and experience. Tailor to any role in one click.

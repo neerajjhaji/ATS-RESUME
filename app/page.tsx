@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Bot, FileSearch, Gauge, ListChecks, Wand2 } from "lucide-react";
 import { BrandFooter, BrandHeader } from "@/components/Brand";
+import { CareerAgent } from "@/components/CareerAgent";
 import { CareerTool } from "@/components/CareerTool";
 import { AtsChecker } from "@/components/AtsChecker";
 import { InputPanel } from "@/components/InputPanel";
@@ -16,6 +17,8 @@ import type { TemplateId } from "@/lib/templates";
 import type { ActionableChange, AtsAudit, JobMatch, ParseResponse, ProcessingPhase } from "@/types";
 
 type Module = "builder" | "checker" | "career";
+
+const AGENT_LOCATIONS = ["Navi Mumbai", "Mumbai", "Remote"];
 
 const PHASE_LABEL: Record<ProcessingPhase, string> = {
   idle: "Analyze & Tailor",
@@ -131,6 +134,14 @@ export default function Home() {
     void analyzeWith(resumeText, job.description || job.title, job.title);
   }
 
+  /** Agent → Builder handoff: load a tailored résumé draft into the editor. */
+  function sendToBuilder(text: string) {
+    setResumeText(text);
+    setOriginalResume(text);
+    setEditableResume(text);
+    setModule("builder");
+  }
+
   function applyChange(change: ActionableChange, index: number) {
     setEditableResume((prev) => {
       if (change.current_text && prev.includes(change.current_text)) {
@@ -201,13 +212,22 @@ export default function Home() {
         </span>
       </header>
 
-      {/* Modules */}
+      {/* Persistent AI Career Agent — one copilot above all three workspaces. */}
+      <CareerAgent
+        resumeText={resumeText}
+        locations={AGENT_LOCATIONS}
+        onNeedResume={() => setModule("checker")}
+        onTailorToJob={tailorToJob}
+        onSendToBuilder={sendToBuilder}
+      />
+
+      {/* Workspaces */}
       <div className="mb-6 inline-flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-card">
         {(
           [
             { id: "checker", label: "ATS Checker", icon: Gauge },
             { id: "builder", label: "AI Resume Builder", icon: Wand2 },
-            { id: "career", label: "Career Tool", icon: Bot },
+            { id: "career", label: "Career Intelligence", icon: Bot },
           ] as { id: Module; label: string; icon: typeof Wand2 }[]
         ).map((m) => {
           const Icon = m.icon;

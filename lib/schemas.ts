@@ -138,6 +138,87 @@ export const coverLetterSchema = {
 };
 
 // ---------------------------------------------------------------------------
+// Career Agent (orchestrator) schemas
+// ---------------------------------------------------------------------------
+
+/** Candidate intelligence profile built from the résumé — the agent's memory seed. */
+export const candidateProfileSchema = {
+  type: Type.OBJECT,
+  properties: {
+    headline: { type: Type.STRING, description: "One-line professional headline, e.g. 'Senior Backend Engineer · Fintech'." },
+    seniority: { type: Type.STRING, description: "Seniority level, e.g. 'Junior', 'Mid', 'Senior', 'Staff', 'Leadership'." },
+    industry: { type: Type.STRING, description: "Primary industry / domain." },
+    years_experience: { type: Type.STRING, description: "Total professional experience, e.g. '6 years'." },
+    skills: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Top 8-15 concrete skills/tools." },
+    strengths: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3-6 genuine strengths." },
+    weaknesses: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3-6 honest gaps / areas to improve." },
+    career_readiness: { type: Type.INTEGER, description: "Overall career-readiness score 0-100." },
+    readiness_breakdown: {
+      type: Type.ARRAY,
+      description: "Dimensions of readiness, e.g. Resume, ATS, Market Demand, Leadership, Interview.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          label: { type: Type.STRING },
+          score: { type: Type.INTEGER, description: "0-100." },
+        },
+        required: ["label", "score"],
+      },
+    },
+    summary: { type: Type.STRING, description: "2-4 sentence plain-language snapshot of the candidate." },
+  },
+  required: [
+    "headline",
+    "seniority",
+    "industry",
+    "years_experience",
+    "skills",
+    "strengths",
+    "weaknesses",
+    "career_readiness",
+    "readiness_breakdown",
+    "summary",
+  ],
+};
+
+/** The agent's execution plan: an ordered list of tool steps toward the user's goal. */
+export const agentPlanSchema = {
+  type: Type.OBJECT,
+  properties: {
+    goal_understanding: {
+      type: Type.STRING,
+      description: "1-2 sentences restating what the user wants, in the agent's own words.",
+    },
+    steps: {
+      type: Type.ARRAY,
+      description: "Ordered tool steps. Use ONLY tool names from the provided catalog. Keep it minimal — no redundant steps.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          tool: { type: Type.STRING, description: "Exact tool name from the catalog." },
+          why: { type: Type.STRING, description: "One concise sentence: why this step, toward the goal." },
+        },
+        required: ["tool", "why"],
+      },
+    },
+  },
+  required: ["goal_understanding", "steps"],
+};
+
+/** Critic verdict over the agent's produced artifacts before they're shown to the user. */
+export const agentCriticSchema = {
+  type: Type.OBJECT,
+  properties: {
+    verdict: { type: Type.STRING, description: "'pass', 'pass_with_notes', or 'revise'." },
+    confidence: { type: Type.INTEGER, description: "0-100 confidence the results genuinely serve the goal." },
+    issues: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Concrete problems found (empty if none)." },
+    improvements: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Actionable next steps for the candidate." },
+    headline: { type: Type.STRING, description: "One-line summary of the outcome for the user." },
+  },
+  required: ["verdict", "confidence", "issues", "improvements", "headline"],
+};
+
+// ---------------------------------------------------------------------------
 // Agent system schemas
 // ---------------------------------------------------------------------------
 
