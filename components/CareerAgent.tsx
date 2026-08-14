@@ -27,6 +27,7 @@ interface StepView {
   status: "running" | "done" | "error";
   summary?: string;
   reasoning?: string;
+  thought?: string;
   requiresApproval?: boolean;
 }
 
@@ -66,7 +67,9 @@ export function CareerAgent({
   const [steps, setSteps] = useState<StepView[]>([]);
   const [result, setResult] = useState<AgentResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [liveThought, setLiveThought] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const pendingThoughtRef = useRef<string | null>(null);
 
   function reset() {
     setPlan(null);
@@ -100,7 +103,13 @@ export function CareerAgent({
 
   function applyEvent(ev: AgentEvent) {
     switch (ev.type) {
-      case "step_start":
+      case "thought":
+        pendingThoughtRef.current = ev.text;
+        setLiveThought(ev.text);
+        break;
+      case "step_start": {
+        const thought = pendingThoughtRef.current ?? undefined;
+        pendingThoughtRef.current = null;
         setSteps((prev) => [
           ...prev,
           {
@@ -108,10 +117,12 @@ export function CareerAgent({
             tool: ev.tool,
             label: ev.label,
             status: "running",
+            thought,
             requiresApproval: ev.requiresApproval,
           },
         ]);
         break;
+      }
       case "step_reasoning":
         setSteps((prev) => prev.map((s) => (s.id === ev.id ? { ...s, reasoning: ev.text } : s)));
         break;
@@ -127,6 +138,7 @@ export function CareerAgent({
         break;
       case "final":
         setResult(ev.result);
+        setLiveThought(null);
         setPhase("done");
         break;
       case "error":
@@ -143,6 +155,8 @@ export function CareerAgent({
     setSteps([]);
     setResult(null);
     setError(null);
+    setLiveThought(null);
+    pendingThoughtRef.current = null;
     setPhase("running");
     const controller = new AbortController();
     abortRef.current = controller;
@@ -318,8 +332,7 @@ export function CareerAgent({
           )}
 
           {/* Live timeline */}
-          {(phase === "running" || (phase === "done" && steps.length > 0) || phase === "error") &&
-            steps.length > 0 && (
+          {(phase === "running" || steps.length > 0) && (
               <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <span className="text-sm font-bold text-slate-900">Execution timeline</span>
@@ -341,6 +354,9 @@ export function CareerAgent({
                         {s.status === "error" && <AlertTriangle size={16} className="text-rose-500" />}
                       </span>
                       <div className="min-w-0">
+                        {s.thought && (
+                          <p className="mb-0.5 text-xs italic text-slate-400">💭 {s.thought}</p>
+                        )}
                         <p className="text-sm font-medium text-slate-800">
                           {s.label}
                           {s.requiresApproval && (
@@ -355,6 +371,12 @@ export function CareerAgent({
                     </li>
                   ))}
                 </ol>
+
+                {phase === "running" && liveThought && (
+                  <p className="mt-3 flex items-start gap-2 border-t border-slate-100 pt-2.5 text-xs italic text-slate-400">
+                    <span>💭</span> {liveThought}
+                  </p>
+                )}
               </div>
             )}
 

@@ -1,5 +1,5 @@
 import { MODELS, generateJson } from "@/lib/gemini";
-import { agentCriticSchema, agentPlanSchema } from "@/lib/schemas";
+import { agentCriticSchema, agentDecisionSchema, agentPlanSchema } from "@/lib/schemas";
 import { TOOL_MAP, TOOLS, toolCatalog } from "@/lib/agent/tools";
 import type { ToolContext } from "@/lib/agent/types";
 import type {
@@ -63,17 +63,27 @@ function defaultPlan(): AgentPlan["steps"] {
   ];
 }
 
+interface AgentDecision {
+  thought: string;
+  action: string;
+  reason?: string;
+}
+
+const MAX_STEPS = 8;
+
 /**
- * RUN phase — execute the approved plan, streaming a live timeline, then run a
- * critic over the results before delivering. `emit` pushes one AgentEvent per
- * SSE line.
+ * RUN phase — a dynamic reason→act→observe loop. Instead of blindly executing a
+ * fixed plan, the agent decides each next tool from what it has already observed,
+ * streaming its thinking. When it decides it's done, a critic verifies the work;
+ * if the critic says "revise", the agent reflects on the feedback and keeps going
+ * (once) rather than shipping a weak result. The approved plan is guidance, not a
+ * script.
  */
 export async function runAgent(
   input: AgentInput,
   plan: AgentPlan,
   emit: (e: AgentEvent) => void
 ): Promise<void> {
-  const steps = (plan.steps ?? []).filter((s) => TOOL_MAP[s.tool]);
   const ctx: ToolContext = {
     goal: input.goal,
     resumeText: input.resumeText,
@@ -85,14 +95,60 @@ export async function runAgent(
   };
 
   const timeline: { tool: string; summary: string }[] = [];
+  const executed = new Set<string>();
+  let stepId = 0;
+  let critic: AgentCritic | undefined;
+  let reflectionUsed = false;
+  let reflectionNote = "";
 
-  for (let i = 0; i < steps.length; i++) {
-    const step = steps[i];
-    const tool = TOOL_MAP[step.tool];
-    ctx.stepId = i;
+  for (let iter = 0; iter < MAX_STEPS; iter++) {
+    let decision: AgentDecision;
+    try {
+      decision = await decideNext(input, plan, timeline, reflectionNote);
+    } catch (err) {
+      emit({ type: "error", message: err instanceof Error ? err.message : "Agent reasoning failed." });
+      break;
+    }
+    if (decision.thought) emit({ type: "thought", text: decision.thought });
+
+    const chosen = TOOL_MAP[decision.action];
+    const finishing = decision.action === "finish" || !chosen;
+
+    // Reached a natural stop: verify, and reflect once if the critic is unhappy.
+    if (finishing) {
+      if (!critic) {
+        try {
+          critic = await runCritic(input.goal, timeline, ctx.blackboard);
+        } catch {
+          /* best-effort */
+        }
+      }
+      if (
+        critic &&
+        !reflectionUsed &&
+        /revise/i.test(critic.verdict) &&
+        executed.size > 0 &&
+        iter < MAX_STEPS - 1
+      ) {
+        reflectionUsed = true;
+        reflectionNote = `${critic.headline} Address: ${critic.issues.join("; ")}`;
+        emit({ type: "thought", text: `Reflecting on the critique and improving: ${critic.headline}` });
+        continue;
+      }
+      break;
+    }
+
+    // Avoid loops: don't re-run a tool that already succeeded (tailoring may repeat).
+    if (executed.has(decision.action) && decision.action !== "tailor_resume") {
+      continue;
+    }
+
+    const tool = chosen;
+    const id = stepId++;
+    ctx.stepId = id;
     emit({
       type: "step_start",
-      id: i,
+      id,
       tool: tool.name,
       label: humanLabel(tool.name),
       requiresApproval: tool.requiresApproval,
@@ -100,24 +156,27 @@ export async function runAgent(
     try {
       const result = await tool.run(ctx);
       ctx.blackboard[tool.blackboardKey] = result.data;
-      if (result.reasoning) emit({ type: "step_reasoning", id: i, text: result.reasoning });
-      emit({ type: "step_done", id: i, tool: tool.name, summary: result.summary });
+      if (result.reasoning) emit({ type: "step_reasoning", id, text: result.reasoning });
+      emit({ type: "step_done", id, tool: tool.name, summary: result.summary });
       timeline.push({ tool: tool.name, summary: result.summary });
+      executed.add(tool.name);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Tool failed.";
-      emit({ type: "step_error", id: i, tool: tool.name, error: msg });
+      emit({ type: "step_error", id, tool: tool.name, error: msg });
       timeline.push({ tool: tool.name, summary: `Failed: ${msg}` });
+      executed.add(tool.name);
     }
   }
 
-  // CRITIC — verify the results genuinely serve the goal before delivery.
-  let critic: AgentCritic | undefined;
-  try {
-    critic = await runCritic(input.goal, timeline, ctx.blackboard);
-    emit({ type: "critic", critic });
-  } catch {
-    /* critic is best-effort; never block delivery on it */
+  // Ensure a critic verdict is always produced and streamed.
+  if (!critic) {
+    try {
+      critic = await runCritic(input.goal, timeline, ctx.blackboard);
+    } catch {
+      /* best-effort */
+    }
   }
+  if (critic) emit({ type: "critic", critic });
 
   const result: AgentResult = {
     goal: input.goal,
@@ -132,6 +191,42 @@ export async function runAgent(
     timeline,
   };
   emit({ type: "final", result });
+}
+
+/** Decide the single next action from the goal + everything observed so far. */
+async function decideNext(
+  input: AgentInput,
+  plan: AgentPlan,
+  timeline: { tool: string; summary: string }[],
+  reflectionNote: string
+): Promise<AgentDecision> {
+  const done = timeline.length
+    ? timeline.map((t, i) => `${i + 1}. ${t.tool}: ${t.summary}`).join("\n")
+    : "(nothing yet)";
+  const intended = plan.steps.map((s) => s.tool).join(" → ") || "(none)";
+  return generateJson<AgentDecision>({
+    model: MODELS.PRO_STRATEGY,
+    contents: `You are an autonomous AI Career Agent running a reason-act loop. Decide the SINGLE next action that best advances the GOAL for this candidate.
+
+Rules:
+- Choose exactly one tool name from the CATALOG, or "finish" when the goal is genuinely satisfied.
+- Build on what's already been done; do NOT repeat a completed tool unless clearly necessary.
+- Be efficient — don't run tools irrelevant to the goal.
+
+=== GOAL ===
+${input.goal || "Assess the candidate and surface their best opportunities."}
+
+=== TOOL CATALOG ===
+${toolCatalog()}
+
+=== INTENDED PLAN (user-approved guidance; adapt freely) ===
+${intended}
+
+=== ALREADY DONE (observations) ===
+${done}${reflectionNote ? `\n\n=== CRITIC FEEDBACK TO ADDRESS BEFORE FINISHING ===\n${reflectionNote}` : ""}`,
+    schema: agentDecisionSchema,
+    temperature: 0.2,
+  });
 }
 
 async function runCritic(

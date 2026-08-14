@@ -238,6 +238,7 @@ export interface AgentCritic {
  */
 export type AgentEvent =
   | { type: "plan"; plan: AgentPlan }
+  | { type: "thought"; text: string }
   | { type: "step_start"; id: number; tool: string; label: string; requiresApproval?: boolean }
   | { type: "step_reasoning"; id: number; text: string }
   | { type: "step_done"; id: number; tool: string; summary: string }

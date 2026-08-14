@@ -273,6 +273,26 @@ export const agentPlanSchema = {
   required: ["goal_understanding", "steps"],
 };
 
+/**
+ * One decision in the agent's dynamic reason→act→observe loop: given the goal and
+ * everything observed so far, pick the single best next tool (or finish).
+ */
+export const agentDecisionSchema = {
+  type: Type.OBJECT,
+  properties: {
+    thought: {
+      type: Type.STRING,
+      description: "Brief reasoning about the current state and what's most useful to do next.",
+    },
+    action: {
+      type: Type.STRING,
+      description: "The exact tool name to run next, or 'finish' when the goal is genuinely satisfied.",
+    },
+    reason: { type: Type.STRING, description: "One sentence: why this action now." },
+  },
+  required: ["thought", "action"],
+};
+
 /** Critic verdict over the agent's produced artifacts before they're shown to the user. */
 export const agentCriticSchema = {
   type: Type.OBJECT,
