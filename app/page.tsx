@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { Bot, FileSearch, Gauge, ListChecks, Wand2 } from "lucide-react";
 import { BrandFooter, BrandHeader } from "@/components/Brand";
-import { CareerTool } from "@/components/CareerTool";
+import { CareerAgent } from "@/components/CareerAgent";
+import { CareerDashboard } from "@/components/CareerDashboard";
 import { AtsChecker } from "@/components/AtsChecker";
 import { InputPanel } from "@/components/InputPanel";
 import { ScoreGauge } from "@/components/ScoreGauge";
@@ -12,6 +13,7 @@ import { RecommendationsFeed } from "@/components/RecommendationsFeed";
 import { ResumeEditor } from "@/components/ResumeEditor";
 import { CoverLetterCard } from "@/components/CoverLetterCard";
 import { TemplateGallery } from "@/components/TemplateGallery";
+import { DEFAULT_LOCATIONS } from "@/lib/locations";
 import type { TemplateId } from "@/lib/templates";
 import type { ActionableChange, AtsAudit, JobMatch, ParseResponse, ProcessingPhase } from "@/types";
 
@@ -54,6 +56,9 @@ export default function Home() {
 
   // Active module — the flow starts at the ATS Checker (upload → parse).
   const [module, setModule] = useState<Module>("checker");
+
+  // Target locations — shared by the agent and Career Intelligence.
+  const [locations, setLocations] = useState<string[]>(DEFAULT_LOCATIONS);
 
   const isBusy = phase === "parsing" || phase === "analyzing";
   const dirty = editableResume !== originalResume;
@@ -131,6 +136,14 @@ export default function Home() {
     void analyzeWith(resumeText, job.description || job.title, job.title);
   }
 
+  /** Agent → Builder handoff: load a tailored résumé draft into the editor. */
+  function sendToBuilder(text: string) {
+    setResumeText(text);
+    setOriginalResume(text);
+    setEditableResume(text);
+    setModule("builder");
+  }
+
   function applyChange(change: ActionableChange, index: number) {
     setEditableResume((prev) => {
       if (change.current_text && prev.includes(change.current_text)) {
@@ -201,13 +214,23 @@ export default function Home() {
         </span>
       </header>
 
-      {/* Modules */}
+      {/* Persistent AI Career Agent — one copilot above all three workspaces. */}
+      <CareerAgent
+        resumeText={resumeText}
+        locations={locations}
+        setLocations={setLocations}
+        onNeedResume={() => setModule("checker")}
+        onTailorToJob={tailorToJob}
+        onSendToBuilder={sendToBuilder}
+      />
+
+      {/* Workspaces */}
       <div className="mb-6 inline-flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-card">
         {(
           [
             { id: "checker", label: "ATS Checker", icon: Gauge },
             { id: "builder", label: "AI Resume Builder", icon: Wand2 },
-            { id: "career", label: "Career Tool", icon: Bot },
+            { id: "career", label: "Career Intelligence", icon: Bot },
           ] as { id: Module; label: string; icon: typeof Wand2 }[]
         ).map((m) => {
           const Icon = m.icon;
@@ -233,9 +256,11 @@ export default function Home() {
 
       {module === "career" && (
         <div className="animate-in">
-          <CareerTool
+          <CareerDashboard
             resumeText={resumeText}
             setResumeText={setResumeText}
+            locations={locations}
+            setLocations={setLocations}
             onTailorToJob={tailorToJob}
           />
         </div>

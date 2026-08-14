@@ -138,6 +138,175 @@ export const coverLetterSchema = {
 };
 
 // ---------------------------------------------------------------------------
+// Career Intelligence schemas
+// ---------------------------------------------------------------------------
+
+/** Market salary estimate for the candidate's target role + location. */
+export const salaryInsightSchema = {
+  type: Type.OBJECT,
+  properties: {
+    currency: { type: Type.STRING, description: "ISO-ish currency label, e.g. 'INR', 'USD'." },
+    period: { type: Type.STRING, description: "Pay period, e.g. 'per year'." },
+    min: { type: Type.INTEGER, description: "Low end of the realistic market range (annual, in the currency)." },
+    median: { type: Type.INTEGER, description: "Median / most-likely market figure." },
+    max: { type: Type.INTEGER, description: "High end of the realistic market range." },
+    basis: { type: Type.STRING, description: "What this is based on, e.g. 'Senior Backend Engineer · Mumbai · 6 yrs'." },
+    market_position: {
+      type: Type.STRING,
+      description: "One sentence on where the candidate likely sits in this range and why.",
+    },
+    factors: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "3-5 factors that move the number up or down for this candidate.",
+    },
+    negotiation_tips: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "3-4 concrete, honest negotiation tips.",
+    },
+  },
+  required: ["currency", "period", "min", "median", "max", "basis", "market_position", "factors", "negotiation_tips"],
+};
+
+/** A generated mock-interview question set. */
+export const mockInterviewSchema = {
+  type: Type.OBJECT,
+  properties: {
+    role: { type: Type.STRING, description: "The role these questions target." },
+    questions: {
+      type: Type.ARRAY,
+      description: "5-7 realistic interview questions spanning behavioral, technical, and role-specific.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          question: { type: Type.STRING },
+          focus: { type: Type.STRING, description: "What it probes, e.g. 'System design', 'Leadership', 'Go concurrency'." },
+        },
+        required: ["question", "focus"],
+      },
+    },
+  },
+  required: ["role", "questions"],
+};
+
+/** Evaluation of one answer the candidate gives during a mock interview. */
+export const mockEvaluationSchema = {
+  type: Type.OBJECT,
+  properties: {
+    score: { type: Type.INTEGER, description: "0-100 quality of the answer for this role." },
+    strengths: { type: Type.ARRAY, items: { type: Type.STRING }, description: "What worked in the answer." },
+    improvements: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Specific ways to make it stronger." },
+    model_answer: {
+      type: Type.STRING,
+      description: "A concise, strong model answer grounded in the candidate's real résumé (STAR where relevant).",
+    },
+  },
+  required: ["score", "strengths", "improvements", "model_answer"],
+};
+
+// ---------------------------------------------------------------------------
+// Career Agent (orchestrator) schemas
+// ---------------------------------------------------------------------------
+
+/** Candidate intelligence profile built from the résumé — the agent's memory seed. */
+export const candidateProfileSchema = {
+  type: Type.OBJECT,
+  properties: {
+    headline: { type: Type.STRING, description: "One-line professional headline, e.g. 'Senior Backend Engineer · Fintech'." },
+    seniority: { type: Type.STRING, description: "Seniority level, e.g. 'Junior', 'Mid', 'Senior', 'Staff', 'Leadership'." },
+    industry: { type: Type.STRING, description: "Primary industry / domain." },
+    years_experience: { type: Type.STRING, description: "Total professional experience, e.g. '6 years'." },
+    skills: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Top 8-15 concrete skills/tools." },
+    strengths: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3-6 genuine strengths." },
+    weaknesses: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3-6 honest gaps / areas to improve." },
+    career_readiness: { type: Type.INTEGER, description: "Overall career-readiness score 0-100." },
+    readiness_breakdown: {
+      type: Type.ARRAY,
+      description: "Dimensions of readiness, e.g. Resume, ATS, Market Demand, Leadership, Interview.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          label: { type: Type.STRING },
+          score: { type: Type.INTEGER, description: "0-100." },
+        },
+        required: ["label", "score"],
+      },
+    },
+    summary: { type: Type.STRING, description: "2-4 sentence plain-language snapshot of the candidate." },
+  },
+  required: [
+    "headline",
+    "seniority",
+    "industry",
+    "years_experience",
+    "skills",
+    "strengths",
+    "weaknesses",
+    "career_readiness",
+    "readiness_breakdown",
+    "summary",
+  ],
+};
+
+/** The agent's execution plan: an ordered list of tool steps toward the user's goal. */
+export const agentPlanSchema = {
+  type: Type.OBJECT,
+  properties: {
+    goal_understanding: {
+      type: Type.STRING,
+      description: "1-2 sentences restating what the user wants, in the agent's own words.",
+    },
+    steps: {
+      type: Type.ARRAY,
+      description: "Ordered tool steps. Use ONLY tool names from the provided catalog. Keep it minimal — no redundant steps.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          tool: { type: Type.STRING, description: "Exact tool name from the catalog." },
+          why: { type: Type.STRING, description: "One concise sentence: why this step, toward the goal." },
+        },
+        required: ["tool", "why"],
+      },
+    },
+  },
+  required: ["goal_understanding", "steps"],
+};
+
+/**
+ * One decision in the agent's dynamic reason→act→observe loop: given the goal and
+ * everything observed so far, pick the single best next tool (or finish).
+ */
+export const agentDecisionSchema = {
+  type: Type.OBJECT,
+  properties: {
+    thought: {
+      type: Type.STRING,
+      description: "Brief reasoning about the current state and what's most useful to do next.",
+    },
+    action: {
+      type: Type.STRING,
+      description: "The exact tool name to run next, or 'finish' when the goal is genuinely satisfied.",
+    },
+    reason: { type: Type.STRING, description: "One sentence: why this action now." },
+  },
+  required: ["thought", "action"],
+};
+
+/** Critic verdict over the agent's produced artifacts before they're shown to the user. */
+export const agentCriticSchema = {
+  type: Type.OBJECT,
+  properties: {
+    verdict: { type: Type.STRING, description: "'pass', 'pass_with_notes', or 'revise'." },
+    confidence: { type: Type.INTEGER, description: "0-100 confidence the results genuinely serve the goal." },
+    issues: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Concrete problems found (empty if none)." },
+    improvements: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Actionable next steps for the candidate." },
+    headline: { type: Type.STRING, description: "One-line summary of the outcome for the user." },
+  },
+  required: ["verdict", "confidence", "issues", "improvements", "headline"],
+};
+
+// ---------------------------------------------------------------------------
 // Agent system schemas
 // ---------------------------------------------------------------------------
 

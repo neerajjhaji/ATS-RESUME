@@ -149,6 +149,120 @@ export interface JobRecommendations {
   note?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Career Intelligence
+// ---------------------------------------------------------------------------
+
+export interface SalaryInsight {
+  currency: string;
+  period: string;
+  min: number;
+  median: number;
+  max: number;
+  basis: string;
+  market_position: string;
+  factors: string[];
+  negotiation_tips: string[];
+}
+
+export interface MockQuestion {
+  question: string;
+  focus: string;
+}
+
+export interface MockInterviewSet {
+  role: string;
+  questions: MockQuestion[];
+}
+
+export interface MockEvaluation {
+  score: number;
+  strengths: string[];
+  improvements: string[];
+  model_answer: string;
+}
+
+/** The Career Intelligence overview bundle, produced in one orchestrated call. */
+export interface CareerOverview {
+  profile: CandidateProfile;
+  salary: SalaryInsight;
+  learningPath: SkillsGapPlan;
+}
+
+// ---------------------------------------------------------------------------
+// Career Agent (orchestrator)
+// ---------------------------------------------------------------------------
+
+export interface ReadinessDimension {
+  label: string;
+  score: number;
+}
+
+/** Candidate intelligence profile the agent builds from the résumé (memory seed). */
+export interface CandidateProfile {
+  headline: string;
+  seniority: string;
+  industry: string;
+  years_experience: string;
+  skills: string[];
+  strengths: string[];
+  weaknesses: string[];
+  career_readiness: number;
+  readiness_breakdown: ReadinessDimension[];
+  summary: string;
+}
+
+/** One ordered step in the agent's plan. */
+export interface AgentPlanStep {
+  tool: string;
+  why: string;
+}
+
+/** The agent's plan, produced before execution and shown to the user for approval. */
+export interface AgentPlan {
+  goal_understanding: string;
+  steps: AgentPlanStep[];
+}
+
+export interface AgentCritic {
+  verdict: string;
+  confidence: number;
+  issues: string[];
+  improvements: string[];
+  headline: string;
+}
+
+/**
+ * Events streamed from the agent loop to the client, one per line (SSE `data:`).
+ * The client renders these as a live execution timeline.
+ */
+export type AgentEvent =
+  | { type: "plan"; plan: AgentPlan }
+  | { type: "thought"; text: string }
+  | { type: "step_start"; id: number; tool: string; label: string; requiresApproval?: boolean }
+  | { type: "step_reasoning"; id: number; text: string }
+  | { type: "step_done"; id: number; tool: string; summary: string }
+  | { type: "step_skipped"; id: number; tool: string; reason: string }
+  | { type: "step_error"; id: number; tool: string; error: string }
+  | { type: "critic"; critic: AgentCritic }
+  | { type: "final"; result: AgentResult }
+  | { type: "error"; message: string };
+
+/** The consolidated output of an agent run, assembled from the tool blackboard. */
+export interface AgentResult {
+  goal: string;
+  profile?: CandidateProfile;
+  ats?: AtsReadiness;
+  matches?: JobMatch[];
+  audit?: AtsAudit;
+  tailored?: SurgicalTailor;
+  interviewPrep?: PrepPack;
+  skillGap?: SkillsGapPlan;
+  critic?: AgentCritic;
+  /** Ordered human-readable trace summaries, for the collapsed timeline. */
+  timeline: { tool: string; summary: string }[];
+}
+
 /** Reusable candidate profile — the single source of truth for autofill/answers. */
 export interface MasterProfile {
   fullName: string;
