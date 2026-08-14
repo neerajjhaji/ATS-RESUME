@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Bot, FileSearch, Gauge, ListChecks, Wand2 } from "lucide-react";
 import { BrandFooter, BrandHeader } from "@/components/Brand";
 import { CareerAgent } from "@/components/CareerAgent";
-import { CareerTool } from "@/components/CareerTool";
+import { CareerDashboard } from "@/components/CareerDashboard";
 import { AtsChecker } from "@/components/AtsChecker";
 import { InputPanel } from "@/components/InputPanel";
 import { ScoreGauge } from "@/components/ScoreGauge";
@@ -253,7 +253,7 @@ export default function Home() {
 
       {module === "career" && (
         <div className="animate-in">
-          <CareerTool
+          <CareerDashboard
             resumeText={resumeText}
             setResumeText={setResumeText}
             onTailorToJob={tailorToJob}

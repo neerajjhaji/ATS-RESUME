@@ -27,10 +27,13 @@ export function CareerTool({
   resumeText,
   setResumeText,
   onTailorToJob,
+  embedded = false,
 }: {
   resumeText: string;
   setResumeText: (v: string) => void;
   onTailorToJob: (job: JobMatch) => void;
+  /** When embedded in the Career Intelligence dashboard, hide the résumé entry + heading. */
+  embedded?: boolean;
 }) {
   const hasResume = resumeText.trim().length > 20;
 
@@ -71,16 +74,19 @@ export function CareerTool({
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
-      <div>
-        <h2 className="text-lg font-bold text-slate-900">Career Intelligence · Job matches</h2>
-        <p className="text-sm text-slate-500">
-          Real roles ranked against your résumé — with match score, matching &amp; missing skills,
-          location, and experience. Tailor to any role in one click.
-        </p>
-      </div>
-
-      <ResumeSource resumeText={resumeText} setResumeText={setResumeText} />
+    <div className={embedded ? "space-y-5" : "mx-auto max-w-3xl space-y-5"}>
+      {!embedded && (
+        <>
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Career Intelligence · Job matches</h2>
+            <p className="text-sm text-slate-500">
+              Real roles ranked against your résumé — with match score, matching &amp; missing
+              skills, location, and experience. Tailor to any role in one click.
+            </p>
+          </div>
+          <ResumeSource resumeText={resumeText} setResumeText={setResumeText} />
+        </>
+      )}
 
       {/* Locations + action */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">

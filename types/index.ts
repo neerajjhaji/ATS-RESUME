@@ -150,6 +150,46 @@ export interface JobRecommendations {
 }
 
 // ---------------------------------------------------------------------------
+// Career Intelligence
+// ---------------------------------------------------------------------------
+
+export interface SalaryInsight {
+  currency: string;
+  period: string;
+  min: number;
+  median: number;
+  max: number;
+  basis: string;
+  market_position: string;
+  factors: string[];
+  negotiation_tips: string[];
+}
+
+export interface MockQuestion {
+  question: string;
+  focus: string;
+}
+
+export interface MockInterviewSet {
+  role: string;
+  questions: MockQuestion[];
+}
+
+export interface MockEvaluation {
+  score: number;
+  strengths: string[];
+  improvements: string[];
+  model_answer: string;
+}
+
+/** The Career Intelligence overview bundle, produced in one orchestrated call. */
+export interface CareerOverview {
+  profile: CandidateProfile;
+  salary: SalaryInsight;
+  learningPath: SkillsGapPlan;
+}
+
+// ---------------------------------------------------------------------------
 // Career Agent (orchestrator)
 // ---------------------------------------------------------------------------
 

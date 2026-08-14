@@ -138,6 +138,74 @@ export const coverLetterSchema = {
 };
 
 // ---------------------------------------------------------------------------
+// Career Intelligence schemas
+// ---------------------------------------------------------------------------
+
+/** Market salary estimate for the candidate's target role + location. */
+export const salaryInsightSchema = {
+  type: Type.OBJECT,
+  properties: {
+    currency: { type: Type.STRING, description: "ISO-ish currency label, e.g. 'INR', 'USD'." },
+    period: { type: Type.STRING, description: "Pay period, e.g. 'per year'." },
+    min: { type: Type.INTEGER, description: "Low end of the realistic market range (annual, in the currency)." },
+    median: { type: Type.INTEGER, description: "Median / most-likely market figure." },
+    max: { type: Type.INTEGER, description: "High end of the realistic market range." },
+    basis: { type: Type.STRING, description: "What this is based on, e.g. 'Senior Backend Engineer · Mumbai · 6 yrs'." },
+    market_position: {
+      type: Type.STRING,
+      description: "One sentence on where the candidate likely sits in this range and why.",
+    },
+    factors: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "3-5 factors that move the number up or down for this candidate.",
+    },
+    negotiation_tips: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "3-4 concrete, honest negotiation tips.",
+    },
+  },
+  required: ["currency", "period", "min", "median", "max", "basis", "market_position", "factors", "negotiation_tips"],
+};
+
+/** A generated mock-interview question set. */
+export const mockInterviewSchema = {
+  type: Type.OBJECT,
+  properties: {
+    role: { type: Type.STRING, description: "The role these questions target." },
+    questions: {
+      type: Type.ARRAY,
+      description: "5-7 realistic interview questions spanning behavioral, technical, and role-specific.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          question: { type: Type.STRING },
+          focus: { type: Type.STRING, description: "What it probes, e.g. 'System design', 'Leadership', 'Go concurrency'." },
+        },
+        required: ["question", "focus"],
+      },
+    },
+  },
+  required: ["role", "questions"],
+};
+
+/** Evaluation of one answer the candidate gives during a mock interview. */
+export const mockEvaluationSchema = {
+  type: Type.OBJECT,
+  properties: {
+    score: { type: Type.INTEGER, description: "0-100 quality of the answer for this role." },
+    strengths: { type: Type.ARRAY, items: { type: Type.STRING }, description: "What worked in the answer." },
+    improvements: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Specific ways to make it stronger." },
+    model_answer: {
+      type: Type.STRING,
+      description: "A concise, strong model answer grounded in the candidate's real résumé (STAR where relevant).",
+    },
+  },
+  required: ["score", "strengths", "improvements", "model_answer"],
+};
+
+// ---------------------------------------------------------------------------
 // Career Agent (orchestrator) schemas
 // ---------------------------------------------------------------------------
 

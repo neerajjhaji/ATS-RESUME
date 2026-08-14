@@ -2,22 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { assertGeminiConfigured } from "@/lib/gemini";
 import { rateLimit } from "@/lib/http";
 import { planAgent, runAgent, type AgentInput } from "@/lib/agent/loop";
+import { humanizeError } from "@/lib/errors";
 import type { AgentEvent, AgentPlan } from "@/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
-
-/** Turn raw provider errors into a message a candidate can act on. */
-function humanize(err: unknown): string {
-  const raw = err instanceof Error ? err.message : String(err);
-  if (/api key not valid|api_key_invalid|invalid.*key/i.test(raw)) {
-    return "The AI engine isn't configured yet — set a valid GEMINI_API_KEY in .env.local and restart the server.";
-  }
-  if (/quota|rate|429/i.test(raw)) {
-    return "The AI engine is rate-limited right now. Please try again in a moment.";
-  }
-  return raw.length > 200 ? "Something went wrong running the agent. Please try again." : raw;
-}
 
 interface ActBody extends Partial<AgentInput> {
   mode?: "plan" | "run";
@@ -66,7 +55,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       const plan = await planAgent(input);
       return NextResponse.json({ plan });
     } catch (err) {
-      return NextResponse.json({ error: humanize(err) }, { status: 500 });
+      return NextResponse.json({ error: humanizeError(err) }, { status: 500 });
     }
   }
 
@@ -87,7 +76,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         emit({ type: "plan", plan });
         await runAgent(input, plan, emit);
       } catch (err) {
-        emit({ type: "error", message: humanize(err) });
+        emit({ type: "error", message: humanizeError(err) });
       } finally {
         controller.close();
       }
