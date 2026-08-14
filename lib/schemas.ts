@@ -168,6 +168,61 @@ export const jobDiscoverySchema = {
 };
 
 /**
+ * Career Tool — batch job-match scoring. Scores every candidate job against the
+ * resume in one call, returning a fit score + skill breakdown keyed by job id.
+ */
+export const recommendMatchesSchema = {
+  type: Type.OBJECT,
+  properties: {
+    matches: {
+      type: Type.ARRAY,
+      description: "One entry per input job, scored against the resume.",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: {
+            type: Type.STRING,
+            description: "The exact id of the job being scored (copied from the input).",
+          },
+          match_score: {
+            type: Type.INTEGER,
+            description:
+              "0-100 fit between the resume and this role, based on genuine skill + experience overlap. Be realistic, not optimistic.",
+          },
+          matched_skills: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: "Key skills the role requires that the candidate already demonstrates.",
+          },
+          missing_skills: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: "Key skills the role requires that are absent or weak in the resume.",
+          },
+          experience_required: {
+            type: Type.STRING,
+            description: 'Experience the role expects, e.g. "3–5 years". Infer from the JD; "Not specified" if unclear.',
+          },
+          match_reason: {
+            type: Type.STRING,
+            description: "One concise sentence on why this role fits (or doesn't) the candidate.",
+          },
+        },
+        required: [
+          "id",
+          "match_score",
+          "matched_skills",
+          "missing_skills",
+          "experience_required",
+          "match_reason",
+        ],
+      },
+    },
+  },
+  required: ["matches"],
+};
+
+/**
  * Surgical tailor output. tailored_resume_data preserves the ORIGINAL resume
  * structure exactly — section titles, ordering, date formats, tone — only
  * injecting genuinely-supported JD keywords into existing bullets. Never invents

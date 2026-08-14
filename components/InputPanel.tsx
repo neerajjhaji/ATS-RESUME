@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { FileText, Gauge, Loader2, Sparkles, Upload, X } from "lucide-react";
+import { FileText, Loader2, Sparkles, Upload, X } from "lucide-react";
 
 interface Props {
   resumeText: string;
@@ -11,14 +11,8 @@ interface Props {
   jobTitle: string;
   setJobTitle: (v: string) => void;
   onAnalyze: () => void;
-  /** Standalone ATS score — resume only, no JD / job title. */
-  onQuickScore: () => void;
-  /** True while any request is in flight (disables all actions). */
+  /** True while a request is in flight (disables actions). */
   isBusy: boolean;
-  /** True specifically while the full analyze pipeline runs. */
-  analyzeBusy: boolean;
-  /** True specifically while the standalone score runs. */
-  quickScoreBusy: boolean;
   phaseLabel: string;
   /** Uploads a file, returns extracted text (parent handles the API call). */
   onFile: (file: File) => Promise<void>;
@@ -35,10 +29,7 @@ export function InputPanel(props: Props) {
     jobTitle,
     setJobTitle,
     onAnalyze,
-    onQuickScore,
     isBusy,
-    analyzeBusy,
-    quickScoreBusy,
     phaseLabel,
     onFile,
     fileName,
@@ -68,7 +59,6 @@ export function InputPanel(props: Props) {
   const hasResume = resumeText.trim().length > 20;
   const hasJd = jobDescription.trim().length > 20;
   const canAnalyze = hasResume && hasJd && !isBusy;
-  const canQuickScore = hasResume && !isBusy;
 
   // Human-readable reason the Analyze button is disabled, so it never looks broken.
   const missing: string[] = [];
@@ -171,7 +161,7 @@ export function InputPanel(props: Props) {
           disabled={!canAnalyze}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-violet-600 px-4 py-3.5 text-sm font-semibold text-white shadow-card transition hover:from-brand-700 hover:to-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {analyzeBusy ? (
+          {isBusy ? (
             <>
               <Loader2 size={17} className="animate-spin" /> {phaseLabel}
             </>
@@ -184,25 +174,6 @@ export function InputPanel(props: Props) {
         {!canAnalyze && !isBusy && analyzeHint && (
           <p className="text-center text-[11px] font-medium text-amber-600">{analyzeHint}</p>
         )}
-
-        <button
-          onClick={onQuickScore}
-          disabled={!canQuickScore}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {quickScoreBusy ? (
-            <>
-              <Loader2 size={16} className="animate-spin" /> Scoring resume…
-            </>
-          ) : (
-            <>
-              <Gauge size={16} /> Predict ATS Score (no job description)
-            </>
-          )}
-        </button>
-        <p className="text-center text-[11px] text-slate-400">
-          Quick score rates your resume on its own — no job description or title needed.
-        </p>
       </div>
     </div>
   );
