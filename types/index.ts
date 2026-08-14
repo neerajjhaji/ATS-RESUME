@@ -125,6 +125,30 @@ export interface JobListing {
   source: string;
 }
 
+/**
+ * A job listing enriched with AI match intelligence, for the Career Tool.
+ * Extends the raw listing with a profile-based match score and skill breakdown.
+ */
+export interface JobMatch extends JobListing {
+  /** 0-100 fit between the candidate's resume and this role. */
+  match_score: number;
+  /** Skills the JD calls for that the candidate already has. */
+  matched_skills: string[];
+  /** Skills the JD calls for that are missing / weak in the resume. */
+  missing_skills: string[];
+  /** Experience the role expects, e.g. "3–5 years". */
+  experience_required: string;
+  /** One-line why-this-fits rationale. */
+  match_reason: string;
+}
+
+/** Career Tool response: ranked, profile-matched roles. */
+export interface JobRecommendations {
+  matches: JobMatch[];
+  /** Optional advisory (e.g. no live sources configured). */
+  note?: string;
+}
+
 /** Reusable candidate profile — the single source of truth for autofill/answers. */
 export interface MasterProfile {
   fullName: string;
